@@ -191,12 +191,18 @@ leaf-injected history is unprovable, not merely unverifiable.
 | **250 root updates** | **47,922 B** | **14 ms** | **36%** |
 
 ```console
-$ node bin/spp-index.mjs attest <asp-contract-id>
-attesting 8 ASP root updates ...
-  post-quantum attestation: 15,761 bytes
-  covers root indices 0..7
-  → append-only chain proven. No trusted setup, no quantum expiry.
+$ node bin/spp-index.mjs attest <asp-contract-id>   # prove
+  post-quantum attestation: 15,761 bytes, covers root indices 0..7
+
+$ attestation/target/release/verify-asp-history \
+    attestation.postcard 0 <first_root> <last_root> 8      # a regulator checks
+VALID: an honest append-only chain of 8 root updates ending at the attested root.
 ```
+
+Prove and verify are **separate Rust binaries** in [`attestation/`](attestation/),
+because the party proving and the party checking are different people. A tampered
+final root turns the `VALID` into `INVALID` — the attestation is a proof, not a
+blob.
 
 Its own limits are published, not implied: **92 bits classical soundness, 46
 against a quantum adversary**, a compression function known not to be collision
@@ -247,7 +253,7 @@ says so.
 
 | Path | What |
 |:--|:--|
-| `attestation/` | **Rust** — the Layer-3 STARK attestation binary (`attest-asp-history`) |
+| `attestation/` | **Rust** — Layer-3 STARK: `attest-asp-history` (prove) + `verify-asp-history` (check) + tests |
 | `bin/spp-index.mjs` | the CLI: `retention` · `init` · `ingest` · `audit` · `attest` |
 | `lib/rpc.mjs` | Soroban RPC client; retention detection from the RPC's own refusal |
 | `lib/store.mjs` | durable SQLite store + coverage-interval completeness accounting |

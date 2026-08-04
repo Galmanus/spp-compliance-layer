@@ -9,6 +9,10 @@ description = "Post-quantum attestation that an ASP root history is a consistent
 name = "attest-asp-history"
 path = "src/main.rs"
 
+[[bin]]
+name = "verify-asp-history"
+path = "src/verify.rs"
+
 [dependencies]
 # The Circle-STARK machinery: riverrun-m31, which carries the append-only-history
 # AIR (asp_history.rs) over Mersenne-31 with a QM31 challenge field. Pinned to
