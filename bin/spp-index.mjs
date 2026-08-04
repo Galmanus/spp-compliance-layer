@@ -10,6 +10,13 @@
 import { openStore } from "../lib/store.mjs";
 import { ingestAll } from "../lib/ingest.mjs";
 import { measureRetention, getLatestLedger } from "../lib/rpc.mjs";
+import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { tmpdir } from "node:os";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 // From NethermindEth/stellar-private-payments deployments/testnet/deployments.json.
 // Genesis ledgers are the deployment ledgers recorded there, and they are what
@@ -148,10 +155,53 @@ async function cmdAudit() {
   process.exit(anyGap ? 1 : 0);
 }
 
+async function cmdAttest() {
+  const pool = process.argv[3];
+  if (!pool) {
+    console.error("usage: spp-index attest <asp-contract-id>");
+    console.error("  proves the captured ASP root history is an append-only chain");
+    process.exit(2);
+  }
+  const store = openStore();
+  const steps = store.aspRootSteps(pool);
+  store.close();
+
+  if (steps.length === 0) {
+    console.log(`no ASP root history captured for ${pool} yet.`);
+    console.log(
+      "This attests the history the index holds; run `ingest` first, and note\n" +
+        "the pool must have emitted LeafAddedEvents. The deployed testnet ASP has\n" +
+        "none yet — the attestation is proven here over captured history, not\n" +
+        "fabricated, so an empty history attests nothing rather than pretending."
+    );
+    process.exit(0);
+  }
+
+  const prover = process.env.ATTEST_BIN ??
+    join(HERE, "..", "..", "..", "projects", "mirror-pool", "crates", "riverrun-m31",
+      "target", "release", "examples", "attest_asp_history");
+  const stepsJson = join(tmpdir(), `asp-steps-${Date.now()}.json`);
+  const outDir = join(tmpdir(), `asp-attest-${Date.now()}`);
+  writeFileSync(stepsJson, JSON.stringify(steps.map((s) => ({ index: s.index, root: s.root }))));
+
+  console.log(`attesting ${steps.length} ASP root updates for ${pool} ...`);
+  const out = execFileSync(prover, [stepsJson, outDir], { maxBuffer: 1 << 24 }).toString();
+  const r = JSON.parse(out.trim().split("\n").pop());
+  console.log(`  post-quantum attestation: ${r.proof_bytes} bytes`);
+  console.log(`  covers root indices ${steps[0].index}..${steps[steps.length - 1].index}`);
+  console.log(`  proof at ${r.proof}`);
+  console.log(
+    "\nThis proves the captured root history is a consistent append-only chain —\n" +
+      "monotone gap-free indices, root chaining, endpoints pinned — with a hash-based\n" +
+      "Circle-STARK. No trusted setup, nothing a quantum adversary undoes, unlike the\n" +
+      "Groth16 the ASP roots are attested by today."
+  );
+}
+
 const cmd = process.argv[2];
-const commands = { init: cmdInit, ingest: cmdIngest, audit: cmdAudit, retention: cmdRetention };
+const commands = { init: cmdInit, ingest: cmdIngest, audit: cmdAudit, retention: cmdRetention, attest: cmdAttest };
 if (!commands[cmd]) {
-  console.error("usage: spp-index <init|ingest|audit|retention>");
+  console.error("usage: spp-index <init|ingest|audit|retention|attest>");
   process.exit(2);
 }
 await commands[cmd]();
