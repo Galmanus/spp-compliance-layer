@@ -76,13 +76,14 @@ Measured across history sizes (from `mirror-pool`'s `attest_history` example):
 250 events (2^8 rows): verify=true  prove 14ms  proof 47,922 B (36% of envelope)
 ```
 
-End to end through the index seam:
+End to end through the index seam, over the real 15-leaf history captured from
+the deployed `asp-membership` contract (see [LIVE-DEMONSTRATION.md](LIVE-DEMONSTRATION.md)):
 
 ```console
-$ node bin/spp-index.mjs attest ASPTEST
-attesting 8 ASP root updates for ASPTEST ...
-  post-quantum attestation: 15,761 bytes
-  covers root indices 0..7
+$ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
+attesting 15 ASP root updates for CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR ...
+  post-quantum attestation: 21,688 bytes
+  covers root indices 0..14
 ```
 
 The attestation reproves no hash — the BN254-Poseidon2 compression is a
@@ -98,8 +99,8 @@ history is **unprovable**, not merely rejected at verification. Two tests in
 
 ```console
 $ npm test
-# tests 12
-# pass 12
+# tests 22
+# pass 22
 # fail 0
 ```
 
@@ -113,6 +114,10 @@ $ npm test
 | u256 decimal and limb encodings canonicalize identically | one root is never keyed as two |
 | a real full-width root round-trips unchanged | the ASP root survives decode intact |
 | a hex-tagged u256 folds to the same decimal | representation is unique, not format-dependent |
+| bootnode serves, hands off (-32002), cache-misses (-32004) | the reference bootnode's control flow |
+| getCoverage reports the completeness proof | the answer to selective omission |
+| scval-xdr is byte-identical to @stellar/stellar-base | served events are canonical XDR, not a lookalike |
+| getEvents response deserializes into the client's struct | the drop-in claim, field by field |
 
 ---
 
