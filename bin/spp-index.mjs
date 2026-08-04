@@ -10,6 +10,7 @@
 import { openStore } from "../lib/store.mjs";
 import { ingestAll } from "../lib/ingest.mjs";
 import { measureRetention, getLatestLedger } from "../lib/rpc.mjs";
+import { serve } from "../lib/serve.mjs";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -155,6 +156,11 @@ async function cmdAudit() {
   process.exit(anyGap ? 1 : 0);
 }
 
+async function cmdServe() {
+  const port = Number(process.argv[3] ?? 8787);
+  serve(port);
+}
+
 async function cmdWatch() {
   const intervalSec = Number(process.argv[3] ?? 30);
   const store = openStore();
@@ -249,9 +255,9 @@ async function cmdAttest() {
 }
 
 const cmd = process.argv[2];
-const commands = { init: cmdInit, ingest: cmdIngest, watch: cmdWatch, audit: cmdAudit, retention: cmdRetention, attest: cmdAttest };
+const commands = { init: cmdInit, ingest: cmdIngest, watch: cmdWatch, serve: cmdServe, audit: cmdAudit, retention: cmdRetention, attest: cmdAttest };
 if (!commands[cmd]) {
-  console.error("usage: spp-index <init|ingest|watch|audit|retention|attest>");
+  console.error("usage: spp-index <init|ingest|watch|serve|audit|retention|attest>");
   process.exit(2);
 }
 await commands[cmd]();

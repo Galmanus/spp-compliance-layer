@@ -165,6 +165,24 @@ SPP pool (native XLM)
 interval, retries on error, and its state is durable — a restarted process picks
 up exactly where it left off, which a wallet has to be able to rely on.
 
+### The read API a wallet points at
+
+The brief's indexer line is *"a durable event index other builders can point a
+wallet at"* — so `serve` exposes a small read-only HTTP surface shaped around
+what a privacy wallet does:
+
+| endpoint | for |
+|:--|:--|
+| `GET /pool/:id/commitments?after=<index>` | the scan feed, in tree order — a wallet trial-decrypts these |
+| `GET /pool/:id/spent/:nullifier` | the one boolean a spend check needs |
+| `GET /pool/:id/asp-roots` | the root history, for attestation or audit |
+| `GET /pool/:id/coverage` | the completeness proof, so a wallet can decide whether to trust this index *before* scanning it |
+| `GET /health` | tip, retention window, per-pool gap count and days-to-genesis-loss |
+
+The `coverage` endpoint is the one that matters: an index a wallet cannot audit
+is an index a wallet cannot trust, so completeness is a queryable fact, not a
+promise.
+
 ---
 
 ## Layer 3 — post-quantum attestation of ASP root history
@@ -248,6 +266,7 @@ node bin/spp-index.mjs retention    # ← run this first: the sliding 7-day cloc
 node bin/spp-index.mjs init         # register the deployed SPP contracts
 node bin/spp-index.mjs ingest       # capture from genesis; proves "no gaps" or names them
 node bin/spp-index.mjs watch 30     # run continuously: ingest every 30s, state persists
+node bin/spp-index.mjs serve 8787   # the read API a wallet points at (HTTP)
 node bin/spp-index.mjs audit        # coverage, gaps, what's gone from the RPC for good
 
 # Layer 3 needs the prover binary, built once from the mirror-pool repo:
