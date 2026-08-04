@@ -20,27 +20,43 @@ admin:        GDTYZI7AXPRCT32FDATJA2N5ZY4SYKS5FHIVH63ZN3GXQRI563BLOB47
 levels:       10  (a 2^10-leaf approval tree)
 ```
 
-**2. Inserted five leaves**, each an on-chain `insert_leaf` that emitted a real
-`LeafAdded(leaf, index, root)` event (asp-membership `lib.rs:239`). First event
-at ledger 3,968,328, tx `b86792b2…`.
+**2. Inserted fifteen leaves** over the demonstration window, each an on-chain
+`insert_leaf` that emitted a real `LeafAdded(leaf, index, root)` event
+(asp-membership `lib.rs:239`). First event at ledger 3,968,328; the tree now
+carries indices 0..14, current root
+`4310839444774630776509186067998916458752727384918121419012860917229327270300`.
 
-**3. The index captured all five** — real events, decoded from the RPC's JSON-XDR
-form (topic symbol `LeafAdded`, value map `{index:u64, leaf:u256, root:u256}`):
+**3. The index captured all fifteen** — real events, decoded from the RPC's
+JSON-XDR form (topic symbol `LeafAdded`, value map `{index:u64, leaf:u256,
+root:u256}`), each u256 canonicalized to one decimal representation:
 
 ```console
 $ node bin/spp-index.mjs ingest
-  asp roots captured: 5 | rows written: 5
-  history: index 0..4, roots 9667236958.., 1185287460.., 2719213467.., 7184735220.., 3450007193..
+  CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
+  scanned through ledger 3,969,521, 3 new rows
+  no gaps from genesis to 3,969,521
 ```
 
-**4. The STARK attested that real history:**
+**4. The STARK attested that real history, and a verifier accepted it:**
 
 ```console
 $ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
-  attesting 5 ASP root updates ...
-  post-quantum attestation: 16,761 bytes
-  covers root indices 0..4
-  → append-only chain proven. No trusted setup, no quantum expiry.
+  attesting 15 ASP root updates ...
+  post-quantum attestation: 21,688 bytes
+  covers root indices 0..14
+
+$ verify-asp-history attestation.postcard 0 <first_root> <last_root> 15
+  VALID: an honest append-only chain of 15 root updates ending at the attested
+  root. No trusted setup was involved and no quantum adversary can forge the
+  ordering.
+```
+
+**5. One flipped bit in the attested root is rejected:**
+
+```console
+$ verify-asp-history attestation.postcard 0 <first_root> <last_root^1> 15
+  INVALID: this attestation does not verify against those public values. The
+  history is not the append-only chain claimed, or the roots do not match.
 ```
 
 ## Why this matters
