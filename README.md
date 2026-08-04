@@ -260,7 +260,11 @@ rest inherited — full accounting in the [mirror-pool](https://github.com/Galma
 
 ```bash
 npm install
-npm test                            # 6 tests: coverage merge, gap honesty, retention parsing
+
+# the whole thing, end to end, on real testnet data, in one command:
+./demo.sh          # retention clock → capture 12 real events → attest → verify → tamper → refuse
+
+npm test                            # 9 JS tests: coverage merge, gap honesty, scan feed, spent check
 
 node bin/spp-index.mjs retention    # ← run this first: the sliding 7-day clock
 node bin/spp-index.mjs init         # register the deployed SPP contracts
