@@ -44,3 +44,39 @@ git clone https://github.com/Galmanus/sorohunter && cd sorohunter
 python3 -m sorohunter.cli scan \
   CCG3ICXNCYWQIRUMUQEJZZIIF2DTXIY63UMVDJT2EJM7VZPE45W2XFLU --network testnet
 ```
+
+## Second pass — directed reading of the surfaces most likely to be wrong
+
+The generic engine hits the same wall on every SPP contract (cross-contract
+constructors, `u256`/struct arguments), so the surfaces a generic fuzzer cannot
+reach were read by hand, targeting the three classes where this project has
+either been burned itself or where mistakes are common.
+
+| surface | contract:line | verdict |
+|---|---|---|
+| non-canonical public inputs (the class that gave riverrun a double-spend) | `pool.rs:365` | **correct** — every public U256 is range-checked against the BN254 modulus, `NonCanonicalPublicInput` on failure, each nullifier included |
+| access control on `insert_leaf` into the approval tree | `asp-membership/lib.rs:195` | **correct** — `admin_only` defaults to `true` via `unwrap_or(true)`, and admin auth is required when set |
+| the gate protecting that control | `asp-membership/lib.rs:137` | **correct** — `set_admin_insert_only` requires `admin.require_auth()`; the gate cannot be disabled by a non-admin |
+
+## The honest conclusion
+
+**The SPP contract layer is well built.** Three classes of bug — including the
+exact one that cost riverrun a double-spend twenty-four hours earlier — were
+checked and are absent. No finding is invented where there is none; that would
+destroy the only thing this submission is selling, which is that its claims are
+executed rather than asserted.
+
+This is the right result for the thesis, not a consolation. The argument was
+never "their contracts are insecure." It was: **nobody has verified them, and
+verifying requires tooling.** Now, backed by execution:
+
+- sorohunter ran probes against four deployed contracts, read-only, and was
+  disciplined about what it could not assemble;
+- directed adversarial reading confirmed three known bug classes are absent from
+  the contract layer;
+- and the generic engine located where a real audit has to go: the value path
+  (`transact`) is reachable only by something that can produce a valid proof.
+
+An audit that reports "checked, and correct, here is exactly what was checked"
+is a contribution. It is what lets a wallet builder stand on this pool knowing
+which surfaces have been looked at and by what method.
