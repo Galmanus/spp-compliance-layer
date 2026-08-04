@@ -139,6 +139,17 @@ The engine also located where a real audit must go: `transact` — the money pat
 — takes a Groth16 proof as a struct, so it is reachable only by something that
 can *prove*. Full report: [`docs/audit/`](docs/audit/sorohunter-spp-pool.md).
 
+The audit layer is not primitive-specific, so the same fork-validated pass was
+run on the lane's **other** sponsor primitive — the OpenZeppelin Confidential
+Token (UltraHonk). Same structure, by execution: the token's paths need its
+cross-contract constructor, and the verifier's soundness-critical surface
+(`verify_proof`, VK management) is behind a `CircuitType` + UltraHonk proof no
+generic fuzzer builds — with contract-level access control correctly manager-
+gated, and the backend self-flagged unaudited by OpenZeppelin. Both sponsors'
+primitives put their critical path behind a proof; auditing this lane has to be
+proof-aware. Full report:
+[`sorohunter-oz-confidential-token.md`](docs/audit/sorohunter-oz-confidential-token.md).
+
 ---
 
 ## Layer 2 — the durable index
