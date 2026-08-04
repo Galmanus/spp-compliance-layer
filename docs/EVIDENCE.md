@@ -98,8 +98,8 @@ history is **unprovable**, not merely rejected at verification. Two tests in
 
 ```console
 $ npm test
-# tests 6
-# pass 6
+# tests 12
+# pass 12
 # fail 0
 ```
 
@@ -110,6 +110,9 @@ $ npm test
 | ASP root steps come back in tree order | the attestation input is correct |
 | idempotent ingest | replays do not double-count |
 | retention refusal recognised, transport error not | "gone" vs "try again" |
+| u256 decimal and limb encodings canonicalize identically | one root is never keyed as two |
+| a real full-width root round-trips unchanged | the ASP root survives decode intact |
+| a hex-tagged u256 folds to the same decimal | representation is unique, not format-dependent |
 
 ---
 
