@@ -198,6 +198,25 @@ leaf-injected history is unprovable, not merely unverifiable.
 | 60 root updates | 33,537 B | 4 ms | 25% |
 | **250 root updates** | **47,922 B** | **14 ms** | **36%** |
 
+### Demonstrated on real on-chain history
+
+The deployed Nethermind pools are empty, so we used the primitive for real:
+deployed Nethermind's own `asp-membership` to testnet, inserted five leaves, and
+ran the full pipeline against the `LeafAdded` events it emitted.
+
+```console
+$ node bin/spp-index.mjs ingest        # captured 5 REAL events from the chain
+  asp roots captured: 5 | history: index 0..4
+$ node bin/spp-index.mjs attest CDP7Z7U2W45K...
+  post-quantum attestation: 16,761 bytes, covers root indices 0..4
+$ verify-asp-history ... <correct roots>   → VALID
+$ verify-asp-history ... <tampered root>   → INVALID
+```
+
+Running against the chain caught two real decoder bugs a first draft had (the
+RPC's `xdrFormat: json`, and a `u64` index field) — found by execution, not by
+reading.
+
 ```console
 $ node bin/spp-index.mjs attest <asp-contract-id>   # prove
   post-quantum attestation: 15,761 bytes, covers root indices 0..7
@@ -248,9 +267,13 @@ that does not exist.
   construction at the seam the pool already exposes.
 - **It is not audited**, and neither is what it builds on — SPP describes itself
   as a work-in-progress reference implementation, and so does this.
-- **The on-chain attestation demo waits on real activity.** The deployed testnet
-  ASP has emitted no `LeafAddedEvent` yet; the proving path is exercised over
-  captured history (real or a labeled fixture), never faked as live.
+- **The on-chain demonstration is real, not a fixture.** Because the deployed
+  Nethermind pools are empty, we deployed Nethermind's own `asp-membership`
+  contract unmodified, inserted five leaves, and ran all three layers against
+  the real `LeafAdded` events — captured and attested on live testnet. Full
+  record in [`docs/LIVE-DEMONSTRATION.md`](docs/LIVE-DEMONSTRATION.md), contract
+  `CDP7Z7U2W45K…`. What is *not* done: wiring the pool to require this
+  attestation, which is a contract change, not claimed here.
 
 The one thing this submission sells is that its claims are **executed**. Every
 number above came from a command in this README. Where something is not done, it
