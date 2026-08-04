@@ -9,11 +9,12 @@
   ▸ the memory the RPC deletes, and the proof the pairing cannot outlive
 ```
 
-**Durable index + post-quantum attestation for Stellar Private Payments — the
-security and durability layer that private wallets need and the primitives
-themselves flag as missing.**
+**A verifiable bootnode for Stellar Private Payments — the durable event archive
+their client already reaches for, made trust-minimized: it serves the history
+the RPC forgets with a completeness proof and a post-quantum attestation the
+reference bootnode's own docs say it lacks.**
 
-[![tests](https://img.shields.io/badge/tests-7%20JS%20%2B%203%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
+[![tests](https://img.shields.io/badge/tests-18%20JS%20%2B%203%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
 [![node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#run-it-yourself-in-five-minutes)
 [![post-quantum](https://img.shields.io/badge/attestation-hash--based%2C%20no%20trusted%20setup-8A2BE2)](#layer-3--post-quantum-attestation-of-asp-root-history)
 [![retention](https://img.shields.io/badge/RPC%20window-7.02%20days%2C%20measured-1f6feb)](#layer-2--the-durable-index)
@@ -26,6 +27,14 @@ themselves flag as missing.**
 > This is the layer that lets those wallets be trusted: it audits the
 > primitives, remembers the history they forget, and proves that history honest
 > in a way a quantum computer cannot undo.
+>
+> **It is not adjacent to the SPP stack — it completes a component of it.**
+> Nethermind's client hands sync off to a `bootnode_url` on the retention gap
+> (`sdk/client/src/sync.rs:298`), and Nethermind's own bootnode docs name
+> forged-history, selective-omission, and misleading-handoff as *unmitigated*
+> trust risks (`docs/src/bootnode.md:41-54`). This project speaks that same
+> bootnode protocol so their unmodified client can point at it, and closes those
+> exact risks with proof. See **[docs/VERIFIABLE-BOOTNODE.md](docs/VERIFIABLE-BOOTNODE.md)**.
 
 ---
 
