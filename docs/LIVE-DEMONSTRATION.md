@@ -59,6 +59,30 @@ $ verify-asp-history attestation.postcard 0 <first_root> <last_root^1> 15
   history is not the append-only chain claimed, or the roots do not match.
 ```
 
+**6. The bootnode serves that real history, and the canonical Stellar codec
+decodes it.** With the handoff cutoff set to an operator's window depth, the
+index serves the 15 captured events over the same JSON-RPC `getEvents` surface
+Nethermind's client speaks — as base64-XDR ScVals, decoded here by
+`@stellar/stellar-base` (the codec their client uses):
+
+```console
+$ BOOTNODE_CUTOFF_LEDGERS=100 node bin/spp-index.mjs serve 8792 &
+$ curl -s -X POST localhost:8792 -d '{"method":"getEvents",...,"startLedger":3968000}'
+  envelope: events,latestLedger,latestLedgerCloseTime,oldestLedger,oldestLedgerCloseTime,cursor
+  events: 15 | cursor: string | oldestLedger: 3848861
+  [0]  LeafAdded idx=0  root=966723695875..
+  [1]  LeafAdded idx=1  root=118528746064..
+  ...
+  [14] LeafAdded idx=14 root=431083944477..
+```
+
+Every event round-trips through the canonical SDK to the exact `{index, leaf,
+root}` the wallet expects. The serve path today needs the cutoff override only
+because these events are still young enough for the main RPC; once the real
+window slides past ledger 3,968,328 during the judging weekend, the default
+cutoff serves them with no override. See
+[VERIFIABLE-BOOTNODE.md](VERIFIABLE-BOOTNODE.md).
+
 ## Why this matters
 
 The argument was never hypothetical, and now it is not demonstrated on synthetic
