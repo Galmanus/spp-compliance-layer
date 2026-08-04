@@ -94,7 +94,7 @@ flowchart LR
     asp  -->|root history| idx
     idx  --> clock
     idx  -->|"(index, root) steps"| stark
-    stark -->|"attestation, ~16 KB"| reg["regulator / verifier<br/>no trusted setup, no quantum expiry"]
+    stark -->|"attestation, ~22 KB"| reg["regulator / verifier<br/>no trusted setup, no quantum expiry"]
 
     style L1 fill:#fff3e0,stroke:#e65100
     style L2 fill:#e3f2fd,stroke:#1565c0
@@ -228,30 +228,29 @@ leaf-injected history is unprovable, not merely unverifiable.
 ### Demonstrated on real on-chain history
 
 The deployed Nethermind pools are empty, so we used the primitive for real:
-deployed Nethermind's own `asp-membership` to testnet, inserted five leaves, and
-ran the full pipeline against the `LeafAdded` events it emitted.
+deployed Nethermind's own `asp-membership` to testnet, inserted **fifteen leaves**
+over the demonstration window, and ran the full pipeline against the `LeafAdded`
+events it emitted. Every number below reproduces from the contract ID; see
+[docs/LIVE-DEMONSTRATION.md](docs/LIVE-DEMONSTRATION.md).
 
 ```console
-$ node bin/spp-index.mjs ingest        # captured 5 REAL events from the chain
-  asp roots captured: 5 | history: index 0..4
-$ node bin/spp-index.mjs attest CDP7Z7U2W45K...
-  post-quantum attestation: 16,761 bytes, covers root indices 0..4
-$ verify-asp-history ... <correct roots>   → VALID
-$ verify-asp-history ... <tampered root>   → INVALID
+$ node bin/spp-index.mjs ingest        # captured 15 REAL events from the chain
+  no gaps from genesis to 3,969,521
+$ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
+  post-quantum attestation: 21,688 bytes, covers root indices 0..14
+
+$ attestation/target/release/verify-asp-history \
+    attestation.postcard 0 <first_root> <last_root> 15     # a regulator checks
+VALID: an honest append-only chain of 15 root updates ending at the attested root.
+
+$ attestation/target/release/verify-asp-history \
+    attestation.postcard 0 <first_root> <last_root^1> 15   # one flipped bit
+INVALID: this attestation does not verify against those public values.
 ```
 
 Running against the chain caught two real decoder bugs a first draft had (the
 RPC's `xdrFormat: json`, and a `u64` index field) — found by execution, not by
 reading.
-
-```console
-$ node bin/spp-index.mjs attest <asp-contract-id>   # prove
-  post-quantum attestation: 15,761 bytes, covers root indices 0..7
-
-$ attestation/target/release/verify-asp-history \
-    attestation.postcard 0 <first_root> <last_root> 8      # a regulator checks
-VALID: an honest append-only chain of 8 root updates ending at the attested root.
-```
 
 Prove and verify are **separate Rust binaries** in [`attestation/`](attestation/),
 because the party proving and the party checking are different people. A tampered
