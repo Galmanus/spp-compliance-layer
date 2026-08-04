@@ -13,7 +13,7 @@
 security and durability layer that private wallets need and the primitives
 themselves flag as missing.**
 
-[![tests](https://img.shields.io/badge/tests-6%20green-4c1)](#run-it-yourself-in-five-minutes)
+[![tests](https://img.shields.io/badge/tests-7%20JS%20%2B%203%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
 [![node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#run-it-yourself-in-five-minutes)
 [![post-quantum](https://img.shields.io/badge/attestation-hash--based%2C%20no%20trusted%20setup-8A2BE2)](#layer-3--post-quantum-attestation-of-asp-root-history)
 [![retention](https://img.shields.io/badge/RPC%20window-7.02%20days%2C%20measured-1f6feb)](#layer-2--the-durable-index)
@@ -151,11 +151,19 @@ flowchart TD
 ```
 
 ```console
+$ node bin/spp-index.mjs watch 30
+[16:24:06] tick 1  tip 3,968,115  +0 rows  runway 3.02d
+[16:24:36] tick 2  tip 3,968,121  +0 rows  runway 3.02d      # the clock ticks down live
+
 $ node bin/spp-index.mjs audit
 audit at chain tip 3,966,299, RPC floor 3,845,336
 SPP pool (native XLM)
   COMPLETE from genesis to chain tip
 ```
+
+`watch` is what makes this infrastructure rather than a script: it ingests on an
+interval, retries on error, and its state is durable — a restarted process picks
+up exactly where it left off, which a wallet has to be able to rely on.
 
 ---
 
@@ -220,6 +228,7 @@ npm test                            # 6 tests: coverage merge, gap honesty, rete
 node bin/spp-index.mjs retention    # ← run this first: the sliding 7-day clock
 node bin/spp-index.mjs init         # register the deployed SPP contracts
 node bin/spp-index.mjs ingest       # capture from genesis; proves "no gaps" or names them
+node bin/spp-index.mjs watch 30     # run continuously: ingest every 30s, state persists
 node bin/spp-index.mjs audit        # coverage, gaps, what's gone from the RPC for good
 
 # Layer 3 needs the prover binary, built once from the mirror-pool repo:

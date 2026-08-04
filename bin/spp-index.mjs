@@ -155,6 +155,54 @@ async function cmdAudit() {
   process.exit(anyGap ? 1 : 0);
 }
 
+async function cmdWatch() {
+  const intervalSec = Number(process.argv[3] ?? 30);
+  const store = openStore();
+  console.log(
+    `watching: ingest every ${intervalSec}s, capturing history before the RPC\n` +
+      `window slides past it. Ctrl-C to stop; state persists in the DB.\n`
+  );
+  let ticks = 0;
+  const tick = async () => {
+    ticks += 1;
+    try {
+      const { tip, results } = await ingestAll(store);
+      const totals = results.reduce(
+        (a, r) => ({
+          rows: a.rows + r.rowsWritten,
+          commitments: a.commitments + r.commitments,
+          asp: a.asp + (r.aspRoots ?? 0),
+        }),
+        { rows: 0, commitments: 0, asp: 0 }
+      );
+      const closest = results
+        .map((r) => r.daysToGenesisLoss)
+        .filter((d) => d != null)
+        .sort((a, b) => a - b)[0];
+      const stamp = new Date().toISOString().slice(11, 19);
+      console.log(
+        `[${stamp}] tick ${ticks}  tip ${fmt(tip)}  +${totals.rows} rows ` +
+          `(${totals.commitments} commitments, ${totals.asp} asp roots)  ` +
+          (closest != null ? `runway ${closest.toFixed(2)}d` : "")
+      );
+      const lost = results.filter((r) => r.genesisAlreadyLost);
+      if (lost.length) {
+        console.log(`  ! ${lost.length} pool(s) past the RPC floor — this index is now their only copy`);
+      }
+    } catch (err) {
+      console.error(`[watch] ingest error (will retry): ${err.message}`);
+    }
+  };
+  await tick();
+  const timer = setInterval(tick, intervalSec * 1000);
+  process.on("SIGINT", () => {
+    clearInterval(timer);
+    store.close();
+    console.log("\nstopped. captured history is durable in the DB.");
+    process.exit(0);
+  });
+}
+
 async function cmdAttest() {
   const pool = process.argv[3];
   if (!pool) {
@@ -201,9 +249,9 @@ async function cmdAttest() {
 }
 
 const cmd = process.argv[2];
-const commands = { init: cmdInit, ingest: cmdIngest, audit: cmdAudit, retention: cmdRetention, attest: cmdAttest };
+const commands = { init: cmdInit, ingest: cmdIngest, watch: cmdWatch, audit: cmdAudit, retention: cmdRetention, attest: cmdAttest };
 if (!commands[cmd]) {
-  console.error("usage: spp-index <init|ingest|audit|retention|attest>");
+  console.error("usage: spp-index <init|ingest|watch|audit|retention|attest>");
   process.exit(2);
 }
 await commands[cmd]();

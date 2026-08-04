@@ -7,9 +7,11 @@
     "notewatch": "./bin/notewatch.mjs"
   },
   "scripts": {
-    "ingest": "node bin/notewatch.mjs ingest",
-    "serve": "node bin/notewatch.mjs serve",
-    "audit": "node bin/notewatch.mjs audit",
+    "retention": "node bin/spp-index.mjs retention",
+    "init": "node bin/spp-index.mjs init",
+    "ingest": "node bin/spp-index.mjs ingest",
+    "watch": "node bin/spp-index.mjs watch",
+    "audit": "node bin/spp-index.mjs audit",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
