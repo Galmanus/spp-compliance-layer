@@ -1,0 +1,46 @@
+# sorohunter against the SPP pool — first pass
+
+Target: `CCG3ICXNCYWQIRUMUQEJZZIIF2DTXIY63UMVDJT2EJM7VZPE45W2XFLU`
+(Nethermind Stellar Private Payments, native-XLM pool, testnet)
+Tool: [sorohunter](https://github.com/Galmanus/sorohunter), fork-validated —
+a finding is an executed invocation sequence against the real WASM in a local
+`soroban-sdk` fork, never an inference. The live network is never touched.
+
+## What ran
+
+The real deployed WASM was acquired read-only from testnet and 15 probes were
+executed against it in a local fork.
+
+| probes | outcome |
+|---|---|
+| 12 | could not deploy — the constructor needs cross-contract dependencies (ASP contracts, verifiers, token) the engine cannot synthesize alone |
+| 2 | skipped — `u256` argument the generic fuzzer does not fabricate (`is_spent`, `is_known_root`) |
+| 1 | skipped — `transact(Proof, ExtData, address)`: the value-moving path takes a Groth16 proof as a struct |
+
+## The honest verdict
+
+**No finding.** And that is reported as no finding, not dressed up. The engine's
+one invariant is that it never claims what it did not execute, so a target it
+cannot assemble yields "could not deploy", never "looks vulnerable".
+
+## What the failure itself tells us
+
+The interesting line is the last one. `transact` — the function that moves money
+in and out of the pool — takes a Groth16 proof as an argument. No generic fuzzer
+produces a valid one, which means **the pool's value path cannot be
+adversarially exercised without a harness that can build a `Proof`** — exactly
+what Nethermind's own client SDK does. Auditing that path is the next step, and
+it requires driving their prover, not fuzzing around it.
+
+That is a real statement about the shape of the attack surface, produced by
+execution rather than by reading: the money path of an SPP pool is only
+reachable by something that can prove, so the audit tooling the ecosystem needs
+is proof-aware, not proof-blind.
+
+## Reproduce
+
+```bash
+git clone https://github.com/Galmanus/sorohunter && cd sorohunter
+python3 -m sorohunter.cli scan \
+  CCG3ICXNCYWQIRUMUQEJZZIIF2DTXIY63UMVDJT2EJM7VZPE45W2XFLU --network testnet
+```
