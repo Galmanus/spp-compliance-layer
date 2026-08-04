@@ -177,9 +177,11 @@ async function cmdAttest() {
     process.exit(0);
   }
 
+  // The attestation binary is a Rust crate IN THIS REPO (attestation/), so a
+  // bare clone builds and runs Layer 3 without a separate checkout:
+  //   cd attestation && cargo build --release
   const prover = process.env.ATTEST_BIN ??
-    join(HERE, "..", "..", "..", "projects", "mirror-pool", "crates", "riverrun-m31",
-      "target", "release", "examples", "attest_asp_history");
+    join(HERE, "..", "attestation", "target", "release", "attest-asp-history");
   const stepsJson = join(tmpdir(), `asp-steps-${Date.now()}.json`);
   const outDir = join(tmpdir(), `asp-attest-${Date.now()}`);
   writeFileSync(stepsJson, JSON.stringify(steps.map((s) => ({ index: s.index, root: s.root }))));

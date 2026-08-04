@@ -96,7 +96,7 @@ flowchart LR
 |:--|:--|:--|:--|
 | **① Audit** | Fork-validated adversarial probing of the lane's own primitives; a finding is an executed invocation sequence, never an inference | ✅ ran, documented | [sorohunter](https://github.com/Galmanus/sorohunter) |
 | **② Index** | Captures pool + ASP events from genesis, past the RPC's 7-day window, and **proves completeness** instead of asserting it | ✅ running vs testnet | this repo |
-| **③ Attestation** | Hash-based Circle-STARK that the ASP root history is an append-only chain — no trusted setup, no quantum expiry | ✅ tested, measured | [riverrun / mirror-pool](https://github.com/Galmanus/mirror-pool) |
+| **③ Attestation** | Hash-based Circle-STARK (Rust, [`attestation/`](attestation/)) that the ASP root history is an append-only chain — no trusted setup, no quantum expiry | ✅ tested, measured | STARK crate [riverrun-m31](https://github.com/Galmanus/mirror-pool) |
 
 ---
 
@@ -217,7 +217,7 @@ node bin/spp-index.mjs ingest       # capture from genesis; proves "no gaps" or 
 node bin/spp-index.mjs audit        # coverage, gaps, what's gone from the RPC for good
 
 # Layer 3 needs the prover binary, built once from the mirror-pool repo:
-#   cargo build --release --example attest_asp_history --features wire-postcard
+#   cd attestation && cargo build --release && cd ..
 node bin/spp-index.mjs attest <asp-contract-id>
 ```
 
@@ -247,6 +247,7 @@ says so.
 
 | Path | What |
 |:--|:--|
+| `attestation/` | **Rust** — the Layer-3 STARK attestation binary (`attest-asp-history`) |
 | `bin/spp-index.mjs` | the CLI: `retention` · `init` · `ingest` · `audit` · `attest` |
 | `lib/rpc.mjs` | Soroban RPC client; retention detection from the RPC's own refusal |
 | `lib/store.mjs` | durable SQLite store + coverage-interval completeness accounting |

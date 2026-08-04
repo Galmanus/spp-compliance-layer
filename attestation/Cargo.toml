@@ -1,0 +1,27 @@
+[package]
+name = "spp-attestation"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Post-quantum attestation that an ASP root history is a consistent append-only chain — the Layer-3 STARK of the spp-compliance-layer submission."
+
+[[bin]]
+name = "attest-asp-history"
+path = "src/main.rs"
+
+[dependencies]
+# The Circle-STARK machinery: riverrun-m31, which carries the append-only-history
+# AIR (asp_history.rs) over Mersenne-31 with a QM31 challenge field. Pinned to
+# the public rev so a bare clone of THIS repo builds the attestation without the
+# mirror-pool checkout present.
+riverrun-m31 = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb", default-features = false, features = ["wire-postcard"] }
+
+[patch.crates-io]
+# riverrun-m31's documented Plonky3 patches, resolved from the same rev.
+p3-uni-stark = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb" }
+p3-circle = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb" }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
