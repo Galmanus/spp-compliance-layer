@@ -13,10 +13,10 @@
 security and durability layer that private wallets need and the primitives
 themselves flag as missing.**
 
-[![tests](https://img.shields.io/badge/tests-6%20green-4c1)](#-run-it-yourself-in-five-minutes)
-[![node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#-run-it-yourself-in-five-minutes)
-[![post-quantum](https://img.shields.io/badge/attestation-hash--based%2C%20no%20trusted%20setup-8A2BE2)](#-layer-3--post-quantum-attestation-of-asp-root-history)
-[![retention](https://img.shields.io/badge/RPC%20window-7.02%20days%2C%20measured-1f6feb)](#-layer-2--the-durable-index)
+[![tests](https://img.shields.io/badge/tests-6%20green-4c1)](#run-it-yourself-in-five-minutes)
+[![node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#run-it-yourself-in-five-minutes)
+[![post-quantum](https://img.shields.io/badge/attestation-hash--based%2C%20no%20trusted%20setup-8A2BE2)](#layer-3--post-quantum-attestation-of-asp-root-history)
+[![retention](https://img.shields.io/badge/RPC%20window-7.02%20days%2C%20measured-1f6feb)](#layer-2--the-durable-index)
 [![lane](https://img.shields.io/badge/lane-Privacy%20%C2%B7%20OpenZeppelin%20%2B%20Nethermind-orange)](https://github.com/NethermindEth/stellar-private-payments)
 [![license](https://img.shields.io/badge/license-MIT-blue)](#license)
 
@@ -29,7 +29,7 @@ themselves flag as missing.**
 
 ---
 
-## 🎯 The problem, in one picture
+## The problem, in one picture
 
 A wallet on a privacy pool has no "what's my balance?" call. It rebuilds its
 balance by trial-decrypting **every commitment the pool ever emitted** — the
@@ -57,7 +57,7 @@ It is not our claim to fake — it is the RPC describing itself.
 
 ---
 
-## 🧩 The three layers
+## The three layers
 
 ```mermaid
 flowchart LR
@@ -94,13 +94,13 @@ flowchart LR
 
 | Layer | What it does | Status | Draws on |
 |:--|:--|:--|:--|
-| **① Audit** | Fork-validated adversarial probing of the lane's own primitives; a finding is an executed invocation sequence, never an inference | ✅ ran, documented | [sorohunter](https://github.com/Galmanus/sorohunter) |
-| **② Index** | Captures pool + ASP events from genesis, past the RPC's 7-day window, and **proves completeness** instead of asserting it | ✅ running vs testnet | this repo |
-| **③ Attestation** | Hash-based Circle-STARK (Rust, [`attestation/`](attestation/)) that the ASP root history is an append-only chain — no trusted setup, no quantum expiry | ✅ tested, measured | STARK crate [riverrun-m31](https://github.com/Galmanus/mirror-pool) |
+| **① Audit** | Fork-validated adversarial probing of the lane's own primitives; a finding is an executed invocation sequence, never an inference | ran, documented | [sorohunter](https://github.com/Galmanus/sorohunter) |
+| **② Index** | Captures pool + ASP events from genesis, past the RPC's 7-day window, and **proves completeness** instead of asserting it | running vs testnet | this repo |
+| **③ Attestation** | Hash-based Circle-STARK (Rust, [`attestation/`](attestation/)) that the ASP root history is an append-only chain — no trusted setup, no quantum expiry | tested, measured | STARK crate [riverrun-m31](https://github.com/Galmanus/mirror-pool) |
 
 ---
 
-## 🔍 Layer 1 — adversarial audit of the primitives
+## Layer 1 — adversarial audit of the primitives
 
 The pool exposes exactly one question to its compliance provider:
 
@@ -122,9 +122,9 @@ project a double-spend — were checked and are absent:
 
 | surface | location | verdict |
 |:--|:--|:--:|
-| non-canonical public inputs | `pool.rs:365` | ✅ range-checked vs BN254 modulus |
-| access control on `insert_leaf` | `asp-membership/lib.rs:195` | ✅ admin-only by default |
-| the gate protecting that control | `asp-membership/lib.rs:137` | ✅ requires admin auth |
+| non-canonical public inputs | `pool.rs:365` | correct: range-checked vs BN254 modulus |
+| access control on `insert_leaf` | `asp-membership/lib.rs:195` | correct: admin-only by default |
+| the gate protecting that control | `asp-membership/lib.rs:137` | correct: requires admin auth |
 
 The engine also located where a real audit must go: `transact` — the money path
 — takes a Groth16 proof as a struct, so it is reachable only by something that
@@ -132,7 +132,7 @@ can *prove*. Full report: [`docs/audit/`](docs/audit/sorohunter-spp-pool.md).
 
 ---
 
-## 📼 Layer 2 — the durable index
+## Layer 2 — the durable index
 
 A page of events proves nothing about ledgers past its last event, so coverage
 is claimed **only for ledgers the RPC confirmed it walked**. Over-claiming is
@@ -146,8 +146,8 @@ flowchart TD
     dec --> cov["coverage intervals<br/>merge adjacent, expose gaps"]
     dec --> db[("SQLite: durable")]
     cov --> audit{"gaps?"}
-    audit -->|none| ok["✅ COMPLETE from genesis"]
-    audit -->|"gap past RPC floor"| lost["⚠️ GONE — this index is the only copy"]
+    audit -->|none| ok["COMPLETE from genesis"]
+    audit -->|"gap past RPC floor"| lost["GONE — this index is the only copy"]
 ```
 
 ```console
@@ -159,7 +159,7 @@ SPP pool (native XLM)
 
 ---
 
-## 🔐 Layer 3 — post-quantum attestation of ASP root history
+## Layer 3 — post-quantum attestation of ASP root history
 
 A `get_root` snapshot proves a root exists at an instant. A regulator in 2035
 needs more: that the **sequence** of published roots is an honest append-only
@@ -211,7 +211,7 @@ rest inherited — full accounting in the [mirror-pool](https://github.com/Galma
 
 ---
 
-## ▶️ Run it yourself in five minutes
+## Run it yourself in five minutes
 
 ```bash
 npm install
@@ -229,7 +229,7 @@ node bin/spp-index.mjs attest <asp-contract-id>
 
 ---
 
-## 🧭 What this is not
+## What this is not
 
 Stated first, because a compliance tool that overstates itself is worse than one
 that does not exist.
@@ -249,7 +249,7 @@ says so.
 
 ---
 
-## 🗂️ Repository map
+## Repository map
 
 | Path | What |
 |:--|:--|
