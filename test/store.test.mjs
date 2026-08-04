@@ -43,3 +43,19 @@ test("idempotent ingest: the same event twice is one row", () => {
   assert.equal(s.ingestAspRoot("P", ev), 0); // ignored
   assert.equal(s.aspRootSteps("P").length, 1);
 });
+
+test("state persists across a reopen — it is an index, not a cache", async () => {
+  const path = `/tmp/persist-test-${process.pid}.db`;
+  const a = openStore(path);
+  a.registerPool("P", 100, "t");
+  a.ingestBatch("P", { fromLedger: 100, toLedger: 5000 });
+  a.close();
+
+  const b = openStore(path); // fresh handle, as a restarted process would open
+  assert.deepEqual(b.coverage("P"), [{ from_ledger: 100, to_ledger: 5000 }]);
+  b.close();
+
+  for (const ext of ["", "-wal", "-shm"]) {
+    try { (await import("node:fs")).unlinkSync(path + ext); } catch {}
+  }
+});
