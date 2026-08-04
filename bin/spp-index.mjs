@@ -156,6 +156,30 @@ async function cmdAudit() {
   process.exit(anyGap ? 1 : 0);
 }
 
+async function cmdTrack() {
+  // Append a timestamped retention observation to a versioned time series. The
+  // point is not any single number but the SLOPE: committed over time, the file
+  // is git-verifiable proof the RPC window slides and the pool's runway shrinks.
+  const { writeFileSync, readFileSync, existsSync } = await import("node:fs");
+  const r = await measureRetention();
+  const GENESIS = 3899359; // SPP native pool
+  const row = {
+    observed_utc: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+    rpc_floor: r.oldestLedger,
+    chain_tip: r.latestLedger,
+    pool_genesis: GENESIS,
+    ledgers_of_runway: GENESIS - r.oldestLedger,
+    days_until_pool_genesis_lost: Math.round(((GENESIS - r.oldestLedger) * 5 / 86400) * 1000) / 1000,
+  };
+  const path = "docs/retention-timeseries.jsonl";
+  const prev = existsSync(path) ? readFileSync(path, "utf8") : "";
+  writeFileSync(path, prev + JSON.stringify(row) + "\n");
+  console.log(JSON.stringify(row, null, 2));
+  if (row.ledgers_of_runway < 0) {
+    console.log("\nThe pool genesis is now PAST the RPC floor. This index is its only copy.");
+  }
+}
+
 async function cmdServe() {
   const port = Number(process.argv[3] ?? 8787);
   serve(port);
@@ -255,9 +279,9 @@ async function cmdAttest() {
 }
 
 const cmd = process.argv[2];
-const commands = { init: cmdInit, ingest: cmdIngest, watch: cmdWatch, serve: cmdServe, audit: cmdAudit, retention: cmdRetention, attest: cmdAttest };
+const commands = { init: cmdInit, ingest: cmdIngest, watch: cmdWatch, serve: cmdServe, track: cmdTrack, audit: cmdAudit, retention: cmdRetention, attest: cmdAttest };
 if (!commands[cmd]) {
-  console.error("usage: spp-index <init|ingest|watch|serve|audit|retention|attest>");
+  console.error("usage: spp-index <init|ingest|watch|serve|track|audit|retention|attest>");
   process.exit(2);
 }
 await commands[cmd]();
