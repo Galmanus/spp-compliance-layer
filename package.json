@@ -1,0 +1,22 @@
+{
+  "name": "notewatch",
+  "version": "0.1.0",
+  "description": "Durable event index for Stellar privacy pools: note discovery past the RPC's 7-day window",
+  "type": "module",
+  "bin": {
+    "notewatch": "./bin/notewatch.mjs"
+  },
+  "scripts": {
+    "ingest": "node bin/notewatch.mjs ingest",
+    "serve": "node bin/notewatch.mjs serve",
+    "audit": "node bin/notewatch.mjs audit",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
