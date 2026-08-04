@@ -102,11 +102,40 @@ none.
 
 ---
 
+## Run it yourself in five minutes
+
+Everything below is a command, and every number in this README came out of one.
+
+```bash
+npm install
+npm test                       # 6 tests: coverage merging, gap honesty, retention parsing
+
+# Layer 2 — the durable index, live against testnet
+node bin/spp-index.mjs retention   # the RPC's 7-day window, and the clock on the pool's genesis
+node bin/spp-index.mjs init        # register the deployed SPP contracts
+node bin/spp-index.mjs ingest      # capture from genesis; proves "no gaps" or names them
+node bin/spp-index.mjs audit       # coverage, gaps, and which are gone from the RPC for good
+
+# Layer 3 — post-quantum attestation of a captured root history
+#   (needs the prover binary built once, from the mirror-pool repo:)
+#   cargo build --release --example attest_asp_history --features wire-postcard
+node bin/spp-index.mjs attest <asp-contract-id>
+```
+
+`retention` is the one to run first: it prints the window measured from the
+RPC's own close times, and how many days until the SPP pool's genesis falls out
+of it. That number shrinks between runs, because the window slides with the
+chain. It is the whole argument, and it is not ours to fake — it comes from the
+RPC describing itself.
+
 ## Measured, not asserted
 
-Every number in this README came out of a command that anyone can re-run;
-`docs/EVIDENCE.md` records how. Where something has not been measured, it says
-so instead of rounding up.
+Every claim here traces to a command above. Where something has not been
+measured — the on-chain attestation demonstration waits on the testnet ASP
+emitting its first `LeafAddedEvent`, of which it has emitted none — it says so
+rather than rounding up. The audit of the SPP contracts (`docs/audit/`) reports
+"well built, here is what was checked" rather than inventing a finding, because
+the one thing this submission sells is that its claims are executed.
 
 ## License
 
