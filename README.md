@@ -261,7 +261,11 @@ rest inherited — full accounting in the [mirror-pool](https://github.com/Galma
 ```bash
 npm install
 
-# the whole thing, end to end, on real testnet data, in one command:
+# Layers 1-2 (index, audit) need only Node. Layer 3 (attestation) is Rust —
+# build it once:
+( cd attestation && cargo build --release )
+
+# then the whole thing, end to end, on real testnet data, in one command:
 ./demo.sh          # retention clock → capture 12 real events → attest → verify → tamper → refuse
 
 npm test                            # 9 JS tests: coverage merge, gap honesty, scan feed, spent check
