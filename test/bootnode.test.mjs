@@ -31,17 +31,26 @@ function seeded() {
 
 const getEvents = (params) => dispatch(seeded(), TIP, { jsonrpc: "2.0", id: 1, method: "getEvents", params });
 
-test("getEvents returns pre-retention history in the RPC's own shape", () => {
+test("getEvents returns pre-retention history in Stellar RPC's base64-XDR shape", () => {
   const r = getEvents({ filters: [{ contractIds: [POOL] }], startLedger: GENESIS, pagination: {} });
   assert.equal(r.error, undefined, JSON.stringify(r.error));
   assert.equal(r.result.events.length, 3);
   const first = r.result.events[0];
   assert.equal(first.contractId, POOL);
-  assert.deepEqual(first.topic, [{ symbol: "LeafAdded" }]);
-  // value map has the {index, leaf, root} the wallet decodes
-  const keys = first.value.map.map((m) => m.key.symbol);
-  assert.deepEqual(keys, ["index", "leaf", "root"]);
-  assert.equal(first.value.map[2].val.u256, "9667");
+  assert.equal(first.type, "contract");
+  assert.equal(typeof first.id, "string");
+  // topic is a Vec<String> of base64-XDR ScVals, value a base64-XDR ScVal —
+  // the shape the client's struct (sdk/stellar/src/rpc.rs:112) deserializes.
+  assert.ok(Array.isArray(first.topic));
+  assert.equal(typeof first.topic[0], "string");
+  assert.equal(typeof first.value, "string");
+  // the LeafAdded topic symbol, canonically encoded
+  assert.equal(first.topic[0], "AAAADwAAAAlMZWFmQWRkZWQAAAA=");
+  // the response envelope carries every field the client requires, cursor a String
+  assert.equal(typeof r.result.latestLedgerCloseTime, "string");
+  assert.equal(typeof r.result.oldestLedgerCloseTime, "string");
+  assert.equal(typeof r.result.oldestLedger, "number");
+  assert.equal(typeof r.result.cursor, "string");
 });
 
 test("a range inside the retention window hands off with -32002 and a fromLedger", () => {

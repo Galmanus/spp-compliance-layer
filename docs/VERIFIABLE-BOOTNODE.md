@@ -48,7 +48,19 @@ omit or reorder a single event.
 This bootnode speaks the same JSON-RPC surface their client already talks to —
 `getEvents` (map params), `getLatestLedger`, the `-32002` retention handoff and
 `-32004` cache-miss, matching `tools/bootnode/src/rpc.rs` — so an unmodified SPP
-client can point `bootnode_url` at it. The history it serves is provable:
+client can point `bootnode_url` at it.
+
+The compatibility is not asserted, it is proven against their own struct. Their
+client deserializes `getEvents` into `GetEventsResponse` /`Event`
+(`sdk/stellar/src/rpc.rs:112`), whose `topic: Vec<String>` and `value: String`
+are base64-XDR ScVals — the default RPC format, since their `RpcClient` does not
+request `xdrFormat:"json"`. This bootnode returns exactly that: every response
+field present with the serde-correct type, and each event's topic/value is
+canonical XDR. `test/conformance.test.mjs` decodes each served event through
+`@stellar/stellar-base` (the same codec) and checks it yields the native
+`{index, leaf, root}` the wallet expects; `test/scval-xdr.test.mjs` asserts the
+dependency-free encoder is byte-identical to that SDK. The history it serves is
+also provable:
 
 | Attack vector (their `bootnode.md`) | Cryptographic mitigation here | Where |
 |:--|:--|:--|
@@ -78,6 +90,12 @@ not the availability one.
   from, which is why genesis is pinned per pool.
 - Today the demo pool's events are young enough that the main RPC still serves
   them, so `getEvents` correctly returns the `-32002` handoff rather than
-  serving. The serve path is exercised in `test/bootnode.test.mjs` against a
-  genuinely pre-retention pool. The same live request flips to served events
-  once the window slides past the pool's genesis.
+  serving. The serve path is exercised in `test/bootnode.test.mjs` and
+  `test/conformance.test.mjs` against a genuinely pre-retention pool. The same
+  live request flips to served events once the window slides past the pool's
+  genesis.
+- `ledgerClosedAt` is the one event field not reconstructed: the index did not
+  capture per-ledger close times, and their client stores the field as a String
+  without keying sync on it, so it is returned empty. Every other field is
+  reconstructed exactly. Capturing close times is a one-line ingest change if a
+  consumer needs them.
