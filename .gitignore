@@ -4,3 +4,5 @@ data/
 *.db-wal
 *.db-shm
 .env
+# Rust build output, not the source
+attestation/target/
