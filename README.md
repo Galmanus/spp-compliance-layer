@@ -25,6 +25,13 @@ reference bootnode's own docs say it lacks.**
 > **Judges start here:** [`SUBMISSION.md`](SUBMISSION.md) — the 60-second map
 > (thesis, on-chain receipts, three layers, honest limits, how to verify).
 
+![demo](docs/demo.gif)
+
+*The whole pipeline on real testnet data: the RPC's 7-day amnesia, 15 real ASP
+leaves attested with a post-quantum STARK, verified, a tampered proof refused —
+then the same attestation verified on-chain and gating a spend. Nothing mocked;
+reproduce with `bash scripts/demo-record.sh`.*
+
 ## A first on Stellar — a post-quantum proof that gates on-chain state
 
 The Layer-3 attestation does not only verify off-chain, and it is not a parallel
