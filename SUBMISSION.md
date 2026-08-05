@@ -1,7 +1,16 @@
 # Submission — a verifiable bootnode for Stellar Private Payments
 
 **Lane:** Confidential-Token & Private-Payment Wallets (Privacy · OpenZeppelin +
-Nethermind). **Repo:** <https://github.com/Galmanus/spp-compliance-layer> · MIT.
+Nethermind), *ecosystem-infrastructure* sub-heading.
+**Repo:** <https://github.com/Galmanus/spp-compliance-layer> · MIT.
+
+> **Positioning.** This is not a competing wallet — it is the infrastructure the
+> lane's wallets depend on. A private-payment wallet is only as trustworthy as the
+> history it rebuilds from and the association set it proves against; both are
+> exactly what this layer secures. Every wallet built in this lane can point its
+> `bootnode_url` here and gate its compliance on the same post-quantum attestation.
+> We win by making the *other* teams' wallets trustworthy, not by out-featuring
+> them.
 
 ---
 
