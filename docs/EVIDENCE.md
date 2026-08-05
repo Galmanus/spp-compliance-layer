@@ -65,24 +65,19 @@ proves it (coverage-interval merging, gap reporting) is tested in §4.
 
 ---
 
-## 3. The attestation is real, tested, and tiny
+## 3. The attestation is real, tested, and at the field's security ceiling
 
 The Layer-3 STARK proves the ASP root history is a consistent append-only chain.
-Measured across history sizes (from `mirror-pool`'s `attest_history` example):
-
-```
-6 events   (2^3 rows): verify=true  prove 0ms   proof 16,706 B (13% of envelope)
-60 events  (2^6 rows): verify=true  prove 4ms   proof 33,537 B (25% of envelope)
-250 events (2^8 rows): verify=true  prove 14ms  proof 47,922 B (36% of envelope)
-```
-
-End to end through the index seam, over the real 15-leaf history captured from
-the deployed `asp-membership` contract (see [LIVE-DEMONSTRATION.md](LIVE-DEMONSTRATION.md)):
+Soundness is the query count prover and verifier share (`attestation/src/lib.rs`);
+at the shipped 128 queries it is **124 bits classical / 62 quantum** — the QM31
+field ceiling. End to end through the index seam, over the real 15-leaf history
+captured from the deployed `asp-membership` contract (see
+[LIVE-DEMONSTRATION.md](LIVE-DEMONSTRATION.md)):
 
 ```console
 $ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
 attesting 15 ASP root updates for CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR ...
-  post-quantum attestation: 21,688 bytes
+  post-quantum attestation: 134,357 bytes
   covers root indices 0..14
 ```
 

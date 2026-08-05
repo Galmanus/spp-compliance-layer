@@ -56,5 +56,12 @@ constraints regardless of hash strength.
 - It is a parallel attestation the pool does not consume today. The pool exposes
   `get_root`; wiring the pool to REQUIRE this attestation is a contract change
   and is not claimed as done.
-- Numbers for the STARK itself (92 bits classical, 46 quantum, the compression
-  caveat) carry over from riverrun unchanged and are published there.
+- Numbers for the STARK itself, computed from riverrun-m31's own round-by-round
+  accounting for THIS attestation's config (`log_blowup = 1`, QM31 degree-4
+  field, 8 PoW bits): at the shipped 128 queries, **124 bits classical, 62
+  quantum**. 62 is the QM31 field ceiling — more queries do not exceed it, and a
+  larger extension field (new crypto) is needed to go higher. The earlier docs
+  cited 92/46; that was riverrun's binding-proof figure at a different config,
+  and did not describe this attestation, whose earlier 20-query setting was in
+  fact 28/14. Corrected here and set to the ceiling. The compression function is
+  not assumed collision resistant (see the STRUCTURE caveat above).
