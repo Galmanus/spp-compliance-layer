@@ -30,10 +30,22 @@ const { xdr, scValToNative } = base;
 
 const ASP = process.env.ASP_ID ?? "CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR";
 const store = openStore();
-const registered = store.pools().find((p) => p.pool === ASP);
-if (!registered) {
-  console.error(`pool ${ASP} not in the index. Run: node bin/spp-index.mjs init && ingest`);
-  process.exit(1);
+let registered = store.pools().find((p) => p.pool === ASP);
+
+// Populate from the committed capture if the index is empty, so this runs
+// standalone from a fresh clone (the RPC may already have forgotten this history
+// — which is the whole point; the index kept it). Sets coverage over the
+// captured ledger span so the bootnode serves rather than cache-misses.
+if (!registered || store.aspRootSteps(ASP).length === 0) {
+  const { readFileSync } = await import("node:fs");
+  const cap = JSON.parse(
+    readFileSync(new URL("../fixtures/asp-history.captured.json", import.meta.url), "utf8")
+  );
+  store.registerPool(ASP, cap.genesis, "ASP membership (captured)");
+  const maxLedger = cap.steps.reduce((m, s) => Math.max(m, s.ledger), cap.genesis);
+  store.ingestBatch(ASP, { fromLedger: cap.genesis, toLedger: maxLedger });
+  for (const st of cap.steps) store.ingestAspRoot(ASP, st);
+  registered = store.pools().find((p) => p.pool === ASP);
 }
 
 // The archive's history is young (still inside the RPC window), so set the
