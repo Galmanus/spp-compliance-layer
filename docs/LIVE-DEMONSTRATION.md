@@ -42,7 +42,7 @@ $ node bin/spp-index.mjs ingest
 ```console
 $ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
   attesting 15 ASP root updates ...
-  post-quantum attestation: 134,357 bytes    # 128 queries = 124 classical / 62 quantum bits
+  post-quantum attestation: 134,457 bytes    # 128 queries = 124 classical / 62 quantum bits
   covers root indices 0..14
 
 $ verify-asp-history attestation.postcard 0 <first_root> <last_root> 15

@@ -77,7 +77,7 @@ captured from the deployed `asp-membership` contract (see
 ```console
 $ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
 attesting 15 ASP root updates for CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR ...
-  post-quantum attestation: 134,357 bytes
+  post-quantum attestation: 134,457 bytes
   covers root indices 0..14
 ```
 
@@ -94,8 +94,8 @@ history is **unprovable**, not merely rejected at verification. Two tests in
 
 ```console
 $ npm test
-# tests 22
-# pass 22
+# tests 31
+# pass 31
 # fail 0
 ```
 
@@ -113,6 +113,15 @@ $ npm test
 | getCoverage reports the completeness proof | the answer to selective omission |
 | scval-xdr is byte-identical to @stellar/stellar-base | served events are canonical XDR, not a lookalike |
 | getEvents response deserializes into the client's struct | the drop-in claim, field by field |
+| a NewCommitmentEvent decodes index + ciphertext from the map | note discovery does not silently null out |
+| a behind-the-cutoff archive cache-misses, not a short page | never serve incomplete as complete |
+| getCoverage reports incomplete when behind the cutoff | completeness is measured against responsibility |
+| a caught-up archive hands off once events are exhausted | no empty page read as "no more history" |
+| contiguous batches coalesce with no gap | cursor-page coverage is recorded, not dropped |
+| a retention refusal on an HTTP error status is still recognised | the handoff never masked as transport |
+| decimal and hex root encodings agree; distinct-high roots differ | the injective-label invariant |
+| admit_root rejects a proof below the 40-query floor | a forged low-query proof cannot admit a root (Rust) |
+| admit_root rejects a tampered proof / gates state | the on-chain gate is sound (Rust) |
 
 ---
 
