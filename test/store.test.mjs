@@ -59,3 +59,56 @@ test("state persists across a reopen — it is an index, not a cache", async () 
     try { (await import("node:fs")).unlinkSync(path + ext); } catch {}
   }
 });
+
+test("contiguous batches coalesce into one span with no gap (the cursor-page path)", () => {
+  const s = openStore(":memory:");
+  s.registerPool("P", 100, "t");
+  // page 1 covers [100,150]; page 2 (cursor) covers [151,200] — the ingest fix
+  // records the second range instead of dropping it. Contiguous → one span.
+  s.ingestBatch("P", { fromLedger: 100, toLedger: 150 });
+  s.ingestBatch("P", { fromLedger: 151, toLedger: 200 });
+  assert.deepEqual(s.coverage("P"), [{ from_ledger: 100, to_ledger: 200 }]);
+  assert.deepEqual(s.gaps("P", 200), []);
+});
+
+test("commitmentsFrom returns commitments in tree order, filtered by cursor", () => {
+  const s = openStore(":memory:");
+  s.registerPool("P", 1, "t");
+  s.ingestBatch("P", {
+    fromLedger: 1, toLedger: 30,
+    commitments: [
+      { commitment: "c2", leafIndex: 2, ledger: 30, eventId: "e2" },
+      { commitment: "c0", leafIndex: 0, ledger: 10, eventId: "e0" },
+      { commitment: "c1", leafIndex: 1, ledger: 20, eventId: "e1" },
+    ],
+  });
+  const all = s.commitmentsFrom("P", -1, 100);
+  assert.deepEqual(all.map((c) => c.leafIndex), [0, 1, 2], "ordered by leaf index");
+  const after0 = s.commitmentsFrom("P", 0, 100);
+  assert.deepEqual(after0.map((c) => c.leafIndex), [1, 2], "cursor skips already-seen");
+});
+
+test("isSpent and nullifiersFrom track spends", () => {
+  const s = openStore(":memory:");
+  s.registerPool("P", 1, "t");
+  s.ingestBatch("P", {
+    fromLedger: 1, toLedger: 10,
+    nullifiers: [{ nullifier: "n1", ledger: 5, eventId: "x1" }],
+  });
+  assert.equal(s.isSpent("P", "n1"), true);
+  assert.equal(s.isSpent("P", "n2"), false);
+  assert.equal(s.nullifiersFrom("P", 0, 10).length, 1);
+});
+
+test("eventsInRange paginates by the paging token without dropping across a boundary", () => {
+  const s = openStore(":memory:");
+  s.registerPool("P", 1, "t");
+  // event ids are the Soroban paging tokens, monotone in ledger order
+  s.ingestAspRoot("P", { leaf: "1", leafIndex: 0, root: "a", ledger: 10, eventId: "e001" });
+  s.ingestAspRoot("P", { leaf: "2", leafIndex: 1, root: "b", ledger: 11, eventId: "e002" });
+  s.ingestAspRoot("P", { leaf: "3", leafIndex: 2, root: "c", ledger: 12, eventId: "e003" });
+  const page1 = s.eventsInRange("P", 0, 1000, "", 2);
+  assert.deepEqual(page1.map((r) => r.eventId), ["e001", "e002"]);
+  const page2 = s.eventsInRange("P", 0, 1000, page1[page1.length - 1].eventId, 2);
+  assert.deepEqual(page2.map((r) => r.eventId), ["e003"], "third event not dropped at the page boundary");
+});

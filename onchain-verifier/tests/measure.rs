@@ -96,12 +96,15 @@ fn admit_root_gates_state_on_a_valid_proof() {
     );
     let cpu = env.cost_estimate().budget().cpu_instruction_cost();
     std::println!(
-        "\n[admit_root] 40q: verify + store + event = {} cpu_insns ({:.1}% of 400M cap), admitted index {}",
+        "\n[admit_root] 40q: verify + store + event = {} cpu_insns ({:.1}% of 400M cap), admitted start_index {}",
         cpu,
         cpu as f64 / 4_000_000.0,
         idx,
     );
-    assert_eq!(idx, 14, "15 leaves from index 0 -> last index 14");
+    // admit_root returns the proof-BOUND start_index (0 here), not a real_rows-
+    // derived tip index (real_rows is not constrained by the AIR, so it is not
+    // treated as authenticated).
+    assert_eq!(idx, 0, "start_index is 0 and is a pinned public value");
 
     // the gated state now reflects the admitted root
     let key = root_key(&env, &steps[steps.len() - 1].root);

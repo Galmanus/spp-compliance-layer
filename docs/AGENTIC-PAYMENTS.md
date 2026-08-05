@@ -12,7 +12,7 @@ composition is a real cross-contract call, not a slogan.
 `is_attested(root_key)` is a boolean, cheap, read-only call: *has this compliance
 root been admitted by a valid post-quantum proof of an honest history?* The
 `guarded-pool` already demonstrates one consumer of it — a spend that the chain
-refuses unless the root is attested (tx `e9d89613…`). An agent payment rail is
+refuses unless the root is attested (tx `255db58d…`). An agent payment rail is
 simply another consumer of the same precondition.
 
 ## How an agent payment gates on it

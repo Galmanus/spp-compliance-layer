@@ -31,8 +31,8 @@ is an honest append-only chain — verified **natively on-chain**, and gating st
 
 | | receipt |
 |:--|:--|
-| Gate admits a root only on a valid proof | tx [`30c6afb6…`](https://stellar.expert/explorer/testnet/tx/30c6afb6c7667f14a36e49cb88e7ac1a9a4197344fc3d5070a1ad8e9ff5dc59a) (contract `CBY2N5KH…`) |
-| A pool spends only against an admitted root | tx [`e9d89613…`](https://stellar.expert/explorer/testnet/tx/e9d89613186c59653d546397c7ff789c6de53538c806a8f82d166c956ef3c602) (contract `CBO4RLRK…`) |
+| Gate admits a root only on a valid proof | tx [`a2c3227c…`](https://stellar.expert/explorer/testnet/tx/a2c3227c0bc372c0a69065fc29fdb6c50d4732fec664f34df42c29d71b3142b8) (contract `CCFYA7GQ…`) |
+| A pool spends only against an admitted root | tx [`255db58d…`](https://stellar.expert/explorer/testnet/tx/255db58d1d3879f615b4e847c86cfb98a070962801acfee7338de11c57019413) (contract `CDGQQW4V…`) |
 | Tampered proof / un-admitted root | rejected on-chain, no state change |
 | Cost | 260M instructions (65% of one tx), 115 KB wasm |
 
@@ -90,8 +90,8 @@ root; no admitted root, no spend.
 
 ```bash
 git clone https://github.com/Galmanus/spp-compliance-layer
-cd spp-compliance-layer && npm install && npm test        # 22 JS tests
-cd attestation && cargo test --release                    # 3 Rust tests
+cd spp-compliance-layer && npm install && npm test        # 31 JS tests
+cd attestation && cargo test --release                    # 7 Rust tests (roundtrip + parse)
 cd ../onchain-verifier && cargo test --release --test measure -- --nocapture
                                                           # metered on-chain CPU
 ```

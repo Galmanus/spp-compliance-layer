@@ -15,7 +15,7 @@ the RPC forgets with a completeness proof and a post-quantum attestation the
 reference bootnode's own docs say it lacks.**
 
 [![on-chain PQ](https://img.shields.io/badge/post--quantum%20STARK-verified%20on--chain%20on%20Stellar-6a1b9a)](#a-first-on-stellar--a-post-quantum-proof-verified-on-chain)
-[![tests](https://img.shields.io/badge/tests-22%20JS%20%2B%203%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
+[![tests](https://img.shields.io/badge/tests-31%20JS%20%2B%207%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
 [![node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#run-it-yourself-in-five-minutes)
 [![post-quantum](https://img.shields.io/badge/attestation-hash--based%2C%20no%20trusted%20setup-8A2BE2)](#layer-3--post-quantum-attestation-of-asp-root-history)
 [![retention](https://img.shields.io/badge/RPC%20window-7.02%20days%2C%20measured-1f6feb)](#layer-2--the-durable-index)
@@ -44,11 +44,11 @@ history, with live receipts:
 
 | | on Stellar testnet |
 |:--|:--|
-| Gated contract | `CBY2N5KH26SS6O23FNZ3XICWIKAAQO7LVEDAOZ6HZ5GD6U52UDMV5WXW` |
-| Valid proof admits the root | tx [`30c6afb6…`](https://stellar.expert/explorer/testnet/tx/30c6afb6c7667f14a36e49cb88e7ac1a9a4197344fc3d5070a1ad8e9ff5dc59a) → index `14`, emits `admitted` |
+| Gated contract | `CCFYA7GQ5FRSWA4OXQK52AKQHGZW5GQCDCCOE6VLGDT7DGHNMLTNEOVW` |
+| Valid proof admits the root | tx [`a2c3227c…`](https://stellar.expert/explorer/testnet/tx/a2c3227c0bc372c0a69065fc29fdb6c50d4732fec664f34df42c29d71b3142b8) → admitted (returns the pinned `start_index`), emits `admitted` |
 | `is_attested(root)` after | `true` for the admitted root, `false` for any other |
 | Tampered proof | transaction **rejected on-chain** — no root admitted |
-| A pool consumes it | `spend` against the attested root succeeds ([`e9d89613…`](https://stellar.expert/explorer/testnet/tx/e9d89613186c59653d546397c7ff789c6de53538c806a8f82d166c956ef3c602)); against an un-admitted root, **refused on-chain** |
+| A pool consumes it | `spend` against the attested root succeeds ([`255db58d…`](https://stellar.expert/explorer/testnet/tx/255db58d1d3879f615b4e847c86cfb98a070962801acfee7338de11c57019413)); against an un-admitted root, **refused on-chain** |
 | Pure verify (first demo) | `true` [`96110dc1…`](https://stellar.expert/explorer/testnet/tx/96110dc19ea1ea63b888bbcd02fbb7c2c76a5d91ff03aa2ce14797e7f83e6718), tampered `false` [`ee36ca3d…`](https://stellar.expert/explorer/testnet/tx/ee36ca3dacb7e7b0c9dfa83afbcb07a5f5b775a27d9674678fa005e07eadea5f) |
 | Cost | 260M instructions (65% of one tx), 115 KB wasm, ~0.0385 XLM |
 

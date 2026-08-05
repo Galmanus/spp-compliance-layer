@@ -32,12 +32,15 @@ is admitted. A pool or wallet checks `is_attested(root)` before honouring a
 membership proof against that root.
 
 Receipts (Stellar testnet), gated contract
-`CBY2N5KH26SS6O23FNZ3XICWIKAAQO7LVEDAOZ6HZ5GD6U52UDMV5WXW`:
+`CCFYA7GQ5FRSWA4OXQK52AKQHGZW5GQCDCCOE6VLGDT7DGHNMLTNEOVW`:
 
 - **Valid proof admits the real root** →
-  tx `30c6afb6c7667f14a36e49cb88e7ac1a9a4197344fc3d5070a1ad8e9ff5dc59a`,
-  returns index `14`, emits
-  `admitted(root=c618a79b…) = 14`;
+  tx `a2c3227c0bc372c0a69065fc29fdb6c50d4732fec664f34df42c29d71b3142b8`,
+  emits `admitted(root=c618a79b…)` and returns the proof-bound `start_index` (`0`).
+  (A self-audit found that `real_rows` is not a public value the AIR constrains,
+  so the gate must not store a `real_rows`-derived tip index as fact — it stores
+  the pinned `start_index` instead; the security-critical output, that this exact
+  `last_root` is admitted, is sound because `last_root` IS pinned.)
 - `is_attested(c618a79b…)` → **`true`** (the admitted root);
 - `is_attested(0000…)` → **`false`** (a root never admitted);
 - **Tampered proof is rejected on-chain** → the `admit_root` transaction traps
@@ -78,11 +81,11 @@ post-quantum attestation  ->  admit_root (gate verifies the STARK on-chain,
    spend against an un-admitted root  --------------------------------> refused
 ```
 
-Receipts (testnet), pool `CBO4RLRKYJ5442P6P4ZFUZSENBCFOGBSJW2Y34YQQRMUASVFVG7R6WYF`
-wired to gate `CBY2N5KH…`:
+Receipts (testnet), pool `CDGQQW4VZ7VHUWVHTYQ3URY3KZMNH2ICGNH5HO4B7CRPBKRLPF5K7Z4U`
+wired to gate `CCFYA7GQ…`:
 
 - **Spend against the attested root succeeds** →
-  tx `e9d89613186c59653d546397c7ff789c6de53538c806a8f82d166c956ef3c602`,
+  tx `255db58d1d3879f615b4e847c86cfb98a070962801acfee7338de11c57019413`,
   emits `spent(root=c618a79b…)`, and `is_spent(note)` then reads `true`;
 - **Spend against a root the gate never admitted is refused** on-chain
   (`root is not compliance-attested by the gate; spend refused`);

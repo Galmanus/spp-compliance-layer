@@ -24,6 +24,11 @@ pub enum DataKey {
     Note(BytesN<32>),
 }
 
+// Persistent-entry TTL: a spent-note record must not expire, or its note could be
+// replayed after the entry is archived. Bumped on write and on read.
+const TTL_THRESHOLD: u32 = 17_280; // ~1 day
+const TTL_EXTEND: u32 = 518_400; // ~30 days
+
 #[contract]
 pub struct GuardedPool;
 
@@ -41,7 +46,14 @@ impl GuardedPool {
     /// a valid post-quantum attestation. If not, the spend is refused (the
     /// transaction traps) and no state changes. If yes, the note is recorded as
     /// spent (replays refused) and a `spent` event is emitted.
-    pub fn spend(env: Env, root_key: BytesN<32>, note: BytesN<32>) -> bool {
+    pub fn spend(env: Env, spender: Address, root_key: BytesN<32>, note: BytesN<32>) -> bool {
+        // Only the spender may spend on their own behalf. Without this, anyone
+        // could mark any note spent. A production pool additionally proves the
+        // note is a member of the attested root's tree (Poseidon2 Merkle path,
+        // CAP-0075) and derives the nullifier from a secret — the two halves this
+        // minimal pool leaves as the documented integration step.
+        spender.require_auth();
+
         let gate: Address = env
             .storage()
             .instance()
@@ -58,12 +70,15 @@ impl GuardedPool {
             panic!("root is not compliance-attested by the gate; spend refused");
         }
 
-        // Anti-replay: a note spends exactly once.
+        // Anti-replay: a note spends exactly once. The record's TTL is bumped so
+        // it cannot be replayed after the persistent entry would otherwise be
+        // archived.
         let note_key = DataKey::Note(note.clone());
         if env.storage().persistent().has(&note_key) {
             panic!("note already spent");
         }
         env.storage().persistent().set(&note_key, &true);
+        env.storage().persistent().extend_ttl(&note_key, TTL_THRESHOLD, TTL_EXTEND);
 
         env.events().publish((symbol_short!("spent"), root_key), note);
         true
