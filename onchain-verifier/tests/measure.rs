@@ -114,6 +114,31 @@ fn admit_root_gates_state_on_a_valid_proof() {
 
 #[test]
 #[should_panic]
+fn admit_root_rejects_a_proof_below_the_security_floor() {
+    // A proof made at 8 queries is cheap to forge; even though it "verifies" at
+    // 8 queries, admit_root must refuse it (the security floor is 40). Without
+    // this floor, an attacker grinds a low-query proof of a forged history and
+    // gets a root admitted.
+    let env = Env::default();
+    let id = env.register(wasmcontract::WASM, ());
+    let client = wasmcontract::Client::new(&env, &id);
+
+    let steps = history(15);
+    let proof = prove_asp_history(&steps, 4, 8); // 8 queries, an honest but weak proof
+    let bytes = proof.to_postcard();
+    let pubs = publics_le(&steps);
+
+    // must panic on the floor, before it even matters that the proof is honest
+    client.admit_root(
+        &Bytes::from_slice(&env, &bytes),
+        &Bytes::from_slice(&env, &pubs),
+        &(steps.len() as u32),
+        &8u32,
+    );
+}
+
+#[test]
+#[should_panic]
 fn admit_root_rejects_a_tampered_proof_and_changes_no_state() {
     let env = Env::default();
     let id = env.register(wasmcontract::WASM, ());
