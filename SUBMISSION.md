@@ -92,5 +92,6 @@ cd ../onchain-verifier && cargo test --release --test measure -- --nocapture
 - **Verifiable bootnode (attack-vector map):** [`docs/VERIFIABLE-BOOTNODE.md`](docs/VERIFIABLE-BOOTNODE.md)
 - **Related work + the precise claim:** [`docs/RELATED-WORK.md`](docs/RELATED-WORK.md)
 - **References + cryptographic grounding:** [`docs/REFERENCES.md`](docs/REFERENCES.md)
+- **Threat model (Privacy Pools risks → coverage):** [`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md)
 - **Evidence (every number, reproduced):** [`docs/EVIDENCE.md`](docs/EVIDENCE.md)
 - **Security accounting:** [`docs/SECURITY.md`](docs/SECURITY.md)
