@@ -78,15 +78,37 @@ fn hex_limbs(limbs: &[u64; ROOT_LIMBS]) -> String {
     limbs.iter().map(|l| format!("{l:08x}")).collect()
 }
 
+/// Write the public values as raw little-endian u64 limbs, exactly the byte
+/// layout the on-chain verifier decodes: start_index (1) ‖ first_root (ROOT_LIMBS)
+/// ‖ last_root (ROOT_LIMBS).
+fn write_publics_bin(path: &str, steps: &[RootStep]) {
+    let mut buf = Vec::with_capacity((1 + 2 * ROOT_LIMBS) * 8);
+    buf.extend_from_slice(&steps[0].index.to_le_bytes());
+    for l in steps[0].root {
+        buf.extend_from_slice(&l.to_le_bytes());
+    }
+    for l in steps[steps.len() - 1].root {
+        buf.extend_from_slice(&l.to_le_bytes());
+    }
+    fs::write(path, &buf).unwrap();
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 3 {
-        eprintln!("usage: attest-asp-history <steps.json> <outdir>");
+    if args.len() < 3 {
+        eprintln!("usage: attest-asp-history <steps.json> <outdir> [num_queries]");
         std::process::exit(2);
     }
 
     let raw = fs::read_to_string(&args[1]).expect("read steps json");
     let outdir = &args[2];
+    // Optional query count: defaults to the shipped off-chain security level.
+    // A smaller count (e.g. 40) produces a proof that verifies ON-CHAIN inside a
+    // single Soroban transaction's CPU budget; see onchain-verifier/.
+    let num_queries = args
+        .get(3)
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(spp_attestation::NUM_QUERIES);
     fs::create_dir_all(outdir).unwrap();
 
     let steps = parse_steps(&raw);
@@ -95,17 +117,19 @@ fn main() {
 
     // Smallest committed height that fits the history; CirclePcs needs >= 4 rows.
     let log_rows = (events.next_power_of_two().trailing_zeros() as usize).max(2);
-    let proof = prove_asp_history(&steps, log_rows, spp_attestation::NUM_QUERIES);
+    let proof = prove_asp_history(&steps, log_rows, num_queries);
     let bytes = proof.to_postcard();
 
     let proof_path = format!("{outdir}/attestation.postcard");
     fs::write(&proof_path, &bytes).unwrap();
+    let publics_path = format!("{outdir}/publics.bin");
+    write_publics_bin(&publics_path, &steps);
 
     // Public values a verifier checks the proof against: the start index and
     // the first and last roots, pinned by the AIR's first- and last-row
     // constraints so the proof cannot be about a different history.
     println!(
-        "{{\"proof\":\"{proof_path}\",\"proof_bytes\":{},\"events\":{events},\"start_index\":{},\"first_root_limbs\":\"{}\",\"last_root_limbs\":\"{}\"}}",
+        "{{\"proof\":\"{proof_path}\",\"publics\":\"{publics_path}\",\"proof_bytes\":{},\"events\":{events},\"real_rows\":{events},\"num_queries\":{num_queries},\"start_index\":{},\"first_root_limbs\":\"{}\",\"last_root_limbs\":\"{}\"}}",
         bytes.len(),
         steps[0].index,
         hex_limbs(&steps[0].root),
