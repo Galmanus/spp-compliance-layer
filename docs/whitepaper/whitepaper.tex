@@ -306,11 +306,16 @@ proof, records the endpoint root as compliance-admitted and emits an event; a
 tampered proof traps the transaction and admits nothing. A pool or wallet checks
 \code{is\_attested(root)} before honouring a membership proof against that root,
 so on-chain state depends on a hash-based post-quantum proof verifying in the
-same transaction. To our knowledge this is the first transparent
-(trusted-setup-free) post-quantum proof verified on-chain on Stellar in a
-privacy-compliance context, and the first to gate on-chain state in one; the
-claim is checkable, given the SDF's own statement that no drop-in post-quantum
-replacement for pairing SNARKs exists. On Stellar testnet, at the gated contract
+same transaction. On-chain ZK is not new on Stellar, so the claim is deliberately
+narrow: to our knowledge this is the first \emph{transparent, hash-based} STARK
+(Circle-STARK over Mersenne-31, FRI with a keccak Merkle commitment) verified
+\emph{natively} on-chain on Stellar --- not wrapped in a BN254 seal the way
+RISC~Zero proofs are, and not a signature scheme --- and the first wired into
+privacy-pool compliance and made load-bearing. Every other on-chain verifier on
+Stellar (Groth16, UltraHonk, RISC-Zero-to-Groth16) is BN254, which a quantum
+computer breaks; the SDF itself states there is no drop-in post-quantum
+replacement for pairing SNARKs. Prior work and the precise claim are set out in
+the repository's \code{docs/RELATED-WORK.md}. On Stellar testnet, at the gated contract
 \code{CA2ZTJXJAXA42M5HYD7YVQNYLCYS2FVQSSQ2MMERC5ODHSK6D7OWZMUY}, a valid proof
 admits the real root (tx \code{86933844\dots}, returning index 14 and emitting
 \code{admitted}), \code{is\_attested} then reads \code{true} for that root and
@@ -400,10 +405,13 @@ off-chain optimum. At the 40 queries that verify in one transaction, the
 on-chain security is 48 classical / 24 quantum bits. So the strong 62-quantum-bit
 attestation runs off-chain for a regulator, and the on-chain contract is a live
 demonstration that transparent post-quantum verification runs on Stellar today,
-at a stated and lower security level. Reaching 62 quantum bits on-chain would
-require splitting the verification across transactions or a larger extension
-field; neither is claimed as done, and the on-chain figure is not presented as
-production-grade.
+at a stated and lower security level. Reaching the off-chain security on-chain is
+a known technique, not new cryptography: recursion / proof aggregation --- prove
+the high-query verification inside a STARK and verify only the succinct recursive
+proof on-chain at bounded cost. Notably this is the sponsor's own line of work
+(Nethermind's STARKPack), and it is live on Soroban today for other schemes
+(recursive UltraHonk at Protocol~27). We scope it as the stated scaling path with
+this contract as its base case, not as done.
 
 \subsection{Other stated limits}
 
