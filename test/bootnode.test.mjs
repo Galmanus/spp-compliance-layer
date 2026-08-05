@@ -21,8 +21,9 @@ const GENESIS = 3_000_000; // well below tip - CUTOFF, so history is pre-retenti
 function seeded() {
   const s = openStore(":memory:");
   s.registerPool(POOL, GENESIS, "ASP membership");
-  // three real-shaped LeafAdded events, fully covered from genesis
-  s.ingestBatch(POOL, { fromLedger: GENESIS, toLedger: GENESIS + 30 });
+  // A caught-up archive: coverage runs from genesis past the retention cutoff, so
+  // the archive holds all of its pre-retention responsibility and can serve.
+  s.ingestBatch(POOL, { fromLedger: GENESIS, toLedger: TIP });
   s.ingestAspRoot(POOL, { leaf: "11", leafIndex: 0, root: "9667", ledger: GENESIS + 10, eventId: "a" });
   s.ingestAspRoot(POOL, { leaf: "22", leafIndex: 1, root: "1185", ledger: GENESIS + 20, eventId: "b" });
   s.ingestAspRoot(POOL, { leaf: "33", leafIndex: 2, root: "2719", ledger: GENESIS + 30, eventId: "c" });
@@ -85,13 +86,61 @@ test("getCoverage exposes the completeness proof the reference bootnode lacks", 
   assert.deepEqual(r.result.gaps, []);
 });
 
-test("getLatestLedger reports the archive tip, never beyond what is covered", () => {
+test("getLatestLedger reports the chain tip (RPC semantic), and never NaN", () => {
   const r = dispatch(seeded(), TIP, { jsonrpc: "2.0", id: 3, method: "getLatestLedger" });
-  assert.ok(r.result.sequence <= TIP);
-  assert.ok(r.result.sequence >= GENESIS);
+  assert.equal(r.result.sequence, TIP);
+  // with no tip in context, 0 — not NaN, not a stale over-claim
+  const r2 = dispatch(seeded(), {}, { jsonrpc: "2.0", id: 3, method: "getLatestLedger" });
+  assert.equal(r2.result.sequence, 0);
+  assert.equal(r2.result.id, "0");
 });
 
 test("an unknown method is a proper JSON-RPC method-not-found", () => {
   const r = dispatch(seeded(), TIP, { jsonrpc: "2.0", id: 4, method: "sendTransaction" });
   assert.equal(r.error.code, -32601);
+});
+
+// The bug the audit caught: a behind-the-cutoff archive must NOT serve partial
+// history as complete. On a genesis sync with no endLedger the responsibility is
+// the whole pre-retention range, so an archive that has not indexed up to the
+// cutoff must cache-miss (retry), never return a silently short page.
+test("a behind-the-cutoff archive cache-misses on a genesis sync, not a short page", () => {
+  const s = openStore(":memory:");
+  s.registerPool(POOL, GENESIS, "ASP membership");
+  s.ingestBatch(POOL, { fromLedger: GENESIS, toLedger: GENESIS + 30 }); // far behind the cutoff
+  s.ingestAspRoot(POOL, { leaf: "11", leafIndex: 0, root: "9667", ledger: GENESIS + 10, eventId: "a" });
+  const r = dispatch(s, TIP, {
+    jsonrpc: "2.0", id: 1, method: "getEvents",
+    params: { filters: [{ contractIds: [POOL] }], startLedger: GENESIS, pagination: {} },
+  });
+  assert.equal(r.result, undefined, "must not serve a partial page");
+  assert.equal(r.error.code, CACHE_MISS_CODE);
+});
+
+// getCoverage on a behind archive reports complete=false: it measures against the
+// archive's responsibility (to the retention cutoff), not just its own tip.
+test("getCoverage reports incomplete when the archive is behind the cutoff", () => {
+  const s = openStore(":memory:");
+  s.registerPool(POOL, GENESIS, "ASP membership");
+  s.ingestBatch(POOL, { fromLedger: GENESIS, toLedger: GENESIS + 30 });
+  const r = dispatch(s, TIP, {
+    jsonrpc: "2.0", id: 2, method: "getCoverage", params: { contractId: POOL },
+  });
+  assert.equal(r.result.complete, false, "a far-behind archive is not complete");
+  assert.ok(r.result.gaps.length >= 1);
+  assert.ok(r.result.measuredThrough > GENESIS + 30);
+});
+
+// A caught-up archive, once the wallet has paged through every event, hands off
+// (-32002) so the wallet resumes on its own RPC — rather than an empty page that
+// reads as "no more history".
+test("a caught-up archive hands off once events are exhausted", () => {
+  const r = dispatch(seeded(), TIP, {
+    jsonrpc: "2.0", id: 5, method: "getEvents",
+    // a cursor past the last event: nothing more to serve, at the boundary
+    params: { filters: [{ contractIds: [POOL] }], pagination: { cursor: "zzz" } },
+  });
+  assert.equal(r.result, undefined);
+  assert.equal(r.error.code, RETENTION_HANDOFF_CODE);
+  assert.equal(r.error.data.reason, "retention_threshold");
 });
