@@ -48,14 +48,20 @@ consults the gate cross-contract before it will spend. No attestation, no
 admitted root; no admitted root, no spend — all on Stellar, with receipts
 ([`guarded-pool/`](guarded-pool/), [`onchain-verifier/`](onchain-verifier/)).
 
-To our knowledge, the first transparent post-quantum proof verified on-chain on
-Stellar in a privacy-compliance context — and the first to *gate on-chain state*
-in one. A checkable claim, given the SDF's own statement that no drop-in
-post-quantum replacement for pairing SNARKs exists, and that Stellar's privacy
-stack (SPP Groth16, OZ UltraHonk) is entirely BN254. On chain the security is 48
+On-chain ZK is not new on Stellar, so the claim is narrow and checkable: to our
+knowledge this is the first **transparent, hash-based STARK** (Circle-STARK over
+Mersenne-31, FRI + keccak) verified **natively** on-chain on Stellar — *not*
+wrapped in a BN254 seal the way RISC Zero proofs are, and not a signature scheme
+— and the first wired into privacy-pool compliance and made load-bearing. Every
+other on-chain verifier on Stellar (Groth16, UltraHonk, RISC-Zero-to-Groth16) is
+BN254, which a quantum computer breaks; the SDF itself says there is no drop-in
+post-quantum replacement for pairing SNARKs. On chain the security is 48
 classical / **24 quantum** bits at 40 queries (one transaction); the stronger
-62-quantum-bit version runs off-chain. Both figures are stated, neither hidden.
-Full detail and reproduction: **[docs/ONCHAIN-VERIFICATION.md](docs/ONCHAIN-VERIFICATION.md)**.
+62-quantum-bit version runs off-chain, and a recursive layer (the sponsor's own
+STARKPack technique) lifts the on-chain figure at bounded cost — stated as the
+scaling path, not claimed as done. Prior art, the precise claim, and the scaling
+path: **[docs/RELATED-WORK.md](docs/RELATED-WORK.md)**. Full detail and
+reproduction: **[docs/ONCHAIN-VERIFICATION.md](docs/ONCHAIN-VERIFICATION.md)**.
 
 ---
 
