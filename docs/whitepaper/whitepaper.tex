@@ -1,0 +1,455 @@
+\documentclass[11pt]{article}
+
+% --- packages (all in a base TeX Live install) ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+
+% --- colours ---
+\definecolor{ink}{HTML}{1A1A2E}
+\definecolor{klein}{HTML}{1F4FD6}
+\definecolor{soft}{HTML}{F4F5F7}
+\definecolor{rule}{HTML}{C9CED6}
+
+\hypersetup{colorlinks=true, linkcolor=klein, urlcolor=klein, citecolor=klein}
+
+% --- headings ---
+\titleformat{\section}{\Large\bfseries\color{ink}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{ink}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.6em}
+
+% --- header / footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{ink}\textbf{spp-compliance-layer}}
+\fancyhead[R]{\small\color{ink}a verifiable bootnode for Stellar Private Payments}
+\fancyfoot[C]{\small\thepage}
+
+% --- code style ---
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{soft},
+  frame=single,
+  rulecolor=\color{rule},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  xleftmargin=0.4em,
+  aboveskip=1em,
+  belowskip=1em,
+}
+
+% --- intuition box (plain-language sidebar) ---
+\newcommand{\intuition}[1]{%
+  \par\vspace{0.5em}%
+  \noindent\colorbox{soft}{\parbox{\dimexpr\linewidth-2\fboxsep}{%
+  \small\textbf{\color{klein}In plain words.}\ #1}}%
+  \par\vspace{0.5em}%
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\begin{document}
+
+% ---------------- title ----------------
+\begin{titlepage}
+\centering
+\vspace*{2.5cm}
+{\Huge\bfseries\color{ink} A Verifiable Bootnode for\\[0.3cm] Stellar Private Payments\par}
+\vspace{0.8cm}
+{\large\color{klein} Durable event history, proven complete, attested with a post-quantum STARK\par}
+\vspace{1.6cm}
+{\large A compliance and durability layer for confidential-token and private-payment wallets\par}
+\vspace{0.4cm}
+{\normalsize Stellar Summit 2026 --- Privacy lane (OpenZeppelin + Nethermind)\par}
+\vspace{2.2cm}
+\begin{minipage}{0.82\textwidth}
+\centering\small\itshape
+Every number in this document is measured against Stellar testnet and reproduces
+from the public repository. Where a claim is a design intent rather than a
+measured result, it says so. Where a security figure has a ceiling, the ceiling
+is named.
+\end{minipage}
+\vfill
+{\small \url{https://github.com/Galmanus/spp-compliance-layer}\par}
+\vspace{0.3cm}
+{\footnotesize Revision built from commit \texttt{ba8ab3d}. MIT licensed.\par}
+\end{titlepage}
+
+% ---------------- abstract ----------------
+\begin{abstract}
+\noindent
+A wallet on a privacy pool cannot ask the chain ``what is my balance?''. It
+rebuilds its balance by replaying every commitment the pool ever emitted. Those
+commitments live in Soroban RPC events, and a Stellar RPC keeps only about seven
+days of them --- measured here at \textbf{7.02 days} (120{,}959 ledgers). After
+that, the history is gone, and a wallet that was offline longer, or is onboarding
+fresh, can no longer prove what it owns.
+
+Nethermind's Stellar Private Payments (SPP) client already anticipates this: on
+the retention gap it hands synchronisation off to an optional \emph{bootnode}, a
+service that keeps the older history. Nethermind ships such a bootnode --- and its
+own documentation enumerates forged history, selective omission, and misleading
+hand-off as \emph{unmitigated} trust risks, offering only ``cross-check with
+multiple providers'' as a remedy. That is trust, not proof.
+
+This work builds a bootnode that is a drop-in replacement for the reference one
+--- it speaks the same JSON-RPC surface, so an unmodified SPP client can point at
+it --- but replaces trust with proof at three layers: (1) an adversarial,
+execution-based audit of the lane's own primitives; (2) a durable event archive
+that proves \emph{completeness} rather than asserting it; and (3) a hash-based,
+post-quantum attestation that the association-set root history is an honest
+append-only chain. We demonstrate all three on real on-chain data --- fifteen
+real leaves inserted into Nethermind's own \code{asp-membership} contract on
+testnet --- and we are explicit about what the construction does and does not
+prove, including a corrected security figure and a named field-imposed ceiling.
+\end{abstract}
+
+\tableofcontents
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+% ---------------- 1 ----------------
+\section{The problem}
+
+A confidential payment hides who paid whom and how much. To do that, a privacy
+pool does not store balances. It stores \emph{commitments} --- opaque
+cryptographic notes --- and lets a wallet prove, in zero knowledge, that it owns
+one and is spending it exactly once. There is no ``balance of'' call, because a
+balance would leak the very thing the pool hides.
+
+The consequence is subtle but decisive: a wallet reconstructs its own balance by
+downloading \emph{every} commitment the pool ever emitted and trial-decrypting
+each one to find the notes that belong to it. That history is a stream of Soroban
+contract events. And Soroban RPC nodes retain events for only a bounded window.
+
+\intuition{The pool is like a bank that keeps no account balances --- only a giant
+pile of sealed envelopes. Your wallet finds its money by opening copies of every
+envelope ever mailed and checking which ones are addressed to it. Now imagine the
+post office throws away every envelope older than a week. If you were away longer
+than that, you can no longer find your own money.}
+
+We measured the window directly, from the ledgers' own close times rather than
+from an assumed ``five seconds per ledger'':
+
+\begin{lstlisting}
+retention window: 120,959 ledgers = 7.02 days
+  oldest servable ledger: 3,846,339
+  chain tip:              3,967,298
+  SPP pool (native XLM) genesis leaves the RPC in ~3 days
+\end{lstlisting}
+
+Two facts matter. First, the number is not ours to invent: the RPC volunteers its
+own \code{oldestLedger} on every reply, so the boundary is the network describing
+itself. Second, the window \emph{slides}: the floor rises with every ledger, so a
+pool whose genesis (ledger 3{,}899{,}359 for the native-XLM SPP pool) is only a
+few days ahead of the floor is a few days from being permanently unreachable. We
+track this as a committed time series, so the slope is verifiable in the git
+history rather than taken on faith.
+
+% ---------------- 2 ----------------
+\section{Background: the SPP stack and the note-discovery dependency}
+
+Nethermind's Stellar Private Payments is a shielded pool built from Circom
+circuits and Groth16 proofs over the BN254 curve. Alongside the pool sit
+\emph{Association Set Providers} (ASPs): contracts that publish a Merkle root over
+an approved set of members, so a wallet can prove its note belongs to a
+compliant set without revealing which note. Each update to an ASP emits a
+\code{LeafAdded(leaf, index, root)} event; the sequence of roots is an
+append-only history.
+
+The wallet's dependency on history is therefore twofold. It needs the pool's
+commitment stream to find its notes, and it needs the ASP root history to build
+compliance proofs. Both are RPC events. Both expire.
+
+\intuition{There are two logbooks the wallet must read from page one: one listing
+every sealed envelope (the pool), and one listing every update to the ``approved
+members'' stamp (the ASP). The post office discards old pages of both.}
+
+% ---------------- 3 ----------------
+\section{The gap the ecosystem already documents}
+
+This project does not claim to have discovered the retention problem. Nethermind's
+client already handles it. On the RPC's refusal --- the literal error
+\code{"startLedger must be within the ledger range"} --- the client
+(\code{sdk/client/src/sync.rs}) recognises a retention hand-off and continues
+synchronisation against an optional \code{bootnode\_url}: a service that archives
+the pre-retention history.
+
+Nethermind ships one (\code{tools/bootnode}). What its own documentation
+(\code{docs/src/bootnode.md}) leaves open is \emph{trust}. Quoted verbatim, under
+``Trust assumptions'' and ``Attack vectors'':
+
+\begin{itemize}[leftmargin=1.4em]
+\item \emph{``the bootnode can serve incorrect history, omit events, or
+selectively censor data''};
+\item \emph{``a malicious bootnode could return an incorrect \code{fromLedger},
+causing the indexer to skip or replay the wrong ledger range''};
+\item \emph{``Serve a forged event history that causes an incorrect local
+reconstruction''};
+\item \emph{``Censor specific contract IDs/events (selective omission)''}.
+\end{itemize}
+
+The only mitigation the document offers is: \emph{``Users who need stronger trust
+guarantees should self-host a bootnode and/or cross-check history using multiple
+RPC providers.''} That is an operational check --- run several and compare --- not
+a cryptographic one. A wallet still has to trust that the archive it read did not
+quietly drop or reorder a single event.
+
+\intuition{The existing helper works, but you have to believe it. Its own manual
+says it could lie to you, hide a transaction, or point you at the wrong page --
+and the suggested defence is ``ask a few helpers and see if they agree''. We
+wanted a helper you don't have to believe, because it proves it is telling the
+truth.}
+
+% ---------------- 4 ----------------
+\section{Contribution: a verifiable bootnode in three layers}
+
+The design keeps everything the reference bootnode does and adds proof at three
+independent layers. Crucially, it speaks the \emph{same} JSON-RPC surface the SPP
+client already talks to, so adoption costs nothing: point \code{bootnode\_url} at
+it.
+
+\subsection{Layer 1 --- adversarial audit of the primitives}
+
+Before trusting a pool's events, one should know the pool's contracts are sound.
+We audit them with \textbf{sorohunter}, a fork-validated engine whose single
+invariant is that \emph{a finding is an executed invocation sequence against the
+real deployed WASM, never an inference}. An unassemblable target yields ``could
+not deploy'', never ``looks vulnerable''.
+
+Run against the native-XLM SPP pool, the engine executed 15 probes: 12 could not
+be deployed (the constructor needs cross-contract dependencies the engine cannot
+synthesise), and 3 were skipped because their arguments (a \code{u256}, or a
+\code{Proof} struct) cannot be fabricated generically. The verdict is
+\emph{no finding, reported as no finding}. Directed reading then confirmed three
+bug classes absent, including non-canonical public-input validation --- the exact
+class that has cost other pools a double-spend.
+
+The audit layer is not specific to one sponsor, so the same pass was run on the
+lane's other primitive, the OpenZeppelin Confidential Token (UltraHonk over
+BN254). Same structure: the token's paths need its cross-contract constructor
+(11 probes, all deploy-failed), and the verifier's soundness-critical surface
+(\code{verify\_proof}, verification-key management) sits behind a
+\code{CircuitType} argument and an UltraHonk proof no generic fuzzer builds
+(17 probes: 13 deploy-failed on the access-control surface, 4 skipped). Reading
+the deployed verifier confirms its access control is correctly manager-gated, and
+that OpenZeppelin's own header flags the backend as unaudited and demo-only.
+
+\intuition{Both competition sponsors put their most important door behind a lock
+that only opens for someone holding a valid mathematical proof. A generic
+lock-picker cannot even reach that door. So auditing this space has to be
+``proof-aware'': the tooling must be able to build a proof, not just rattle the
+handle. Our audit says exactly what it could and could not reach, and invents
+nothing.}
+
+\subsection{Layer 2 --- a durable archive that proves completeness}
+
+The archive captures pool and ASP events from each contract's genesis ledger and
+stores them durably. The property that matters is not that it \emph{has} events
+but that it is not \emph{missing} any. A page of events proves nothing about the
+ledgers after its last event, so coverage is claimed only for ledgers the RPC
+confirmed it walked, stored as merge-able intervals. Gaps are reported, never
+hidden --- including the honest case where a gap has already fallen below the RPC
+floor and this archive is now the only copy.
+
+This directly answers two of the reference bootnode's named attack vectors.
+Against \emph{selective omission}, a companion \code{getCoverage} method returns
+the completeness proof for the served range: an omitted ledger is a reported gap,
+not silent corruption. Against a \emph{misleading hand-off}, the hand-off point is
+bounded by proven-contiguous coverage from genesis, so a wallet can verify the
+archive actually held everything below the hand-off before trusting it.
+
+The archive speaks the bootnode protocol wire-for-wire. It implements
+\code{getEvents} (with the same \code{startLedger}/\code{endLedger}/pagination
+map-parameters), \code{getLatestLedger}, the \code{-32002} retention hand-off, and
+the \code{-32004} cache-miss --- matching \code{tools/bootnode/src/rpc.rs}. And it
+returns events in the exact shape the SPP client deserialises: the client's
+\code{GetEventsResponse} (\code{sdk/stellar/src/rpc.rs}) carries \code{topic} as a
+vector of base64-XDR strings and \code{value} as a base64-XDR string, because its
+RPC client uses the default (non-JSON) format. We encode canonical XDR for the
+\code{ScVal} shapes an SPP event uses, and prove --- byte for byte, in a test ---
+that our dependency-free encoder is identical to the canonical
+\code{@stellar/stellar-base} codec the client relies on.
+
+\intuition{We rebuilt the helper to speak the wallet's exact language, down to the
+last byte, so the real wallet plugs into ours with no changes. And unlike the
+original, ours can hand the wallet a receipt proving it kept every page from day
+one.}
+
+\subsection{Layer 3 --- a post-quantum attestation of the root history}
+
+The ASP root history is the compliance spine, and today it is attested by
+Groth16 over BN254: a scheme with a trusted setup, on a curve a future quantum
+computer breaks, recorded on a permanent ledger. We add a parallel attestation
+with none of those properties: a hash-based Circle-STARK (from the
+\code{riverrun-m31} crate) that proves the captured root history is a consistent
+\emph{append-only chain} --- indices $0,1,2,\dots$ with no gap, each root chained
+from the last, and the first and last roots pinned as public values.
+
+What the STARK proves is the \emph{shape} of the history, not the hash inside it.
+The BN254-Poseidon2 compression that produces each root is treated as a witnessed
+label, not re-derived inside the Mersenne-31 field the STARK runs over (that would
+be reproving a pairing-field hash in a prime field --- out of scope, and stated
+so). The security property is therefore precise: a reordered or leaf-injected
+history is \emph{unprovable} --- not merely rejected at verification, but
+impossible to produce a valid proof for.
+
+\intuition{Think of it as a tamper-evident notary stamp on the list of ``approved
+members'' updates. It does not re-examine each stamp's ink; it proves the list is
+in honest order with nothing inserted or swapped --- with mathematics a quantum
+computer cannot forge, and with no secret setup that could leak and break it. A
+regulator in 2035 can check it without trusting anyone.}
+
+% ---------------- 5 ----------------
+\section{Security analysis, stated honestly}
+
+Post-quantum claims are easy to overstate, so this section is precise about which
+part is post-quantum, at what strength, and protecting what.
+
+\subsection{What is post-quantum, and what is not}
+
+The Layer-3 attestation is post-quantum \emph{in construction}: its security
+rests only on hash collision-resistance and FRI soundness, both hash-based, so a
+quantum adversary gains at most a Grover square-root speed-up, not a Shor break.
+There is no trusted setup and no pairing.
+
+The privacy proofs themselves are \emph{not} post-quantum. SPP uses Groth16 over
+BN254; the OpenZeppelin Confidential Token uses UltraHonk over BN254. Both are
+curve-based and quantum-breakable. Our attestation cannot change that --- it
+attests the root-history record, not the privacy proofs, and it could not: they
+live in a different mathematical field. The Stellar Development Foundation itself
+states there is ``no drop-in post-quantum replacement for pairing-based SNARKs'',
+so this is an open ecosystem problem, not an oversight of this project.
+
+\subsection{The concrete numbers, and a corrected figure}
+
+Soundness is set by a FRI query count that the prover and verifier share (kept in
+one place, \code{attestation/src/lib.rs}, so they cannot drift). Using
+\code{riverrun-m31}'s own round-by-round accounting, at \code{log\_blowup}$=1$
+over the QM31 degree-4 challenge field ($|E|\approx 2^{124}$) plus 8
+proof-of-work bits:
+
+\begin{center}
+\begin{tabular}{rccc}
+\toprule
+FRI queries & classical bits & quantum bits & proof size (15-leaf) \\
+\midrule
+20 (earlier) & 28 & 14 & 21{,}688 B \\
+\textbf{128 (shipped)} & \textbf{124} & \textbf{62} & \textbf{134{,}357 B} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+We correct a figure an earlier draft carried. It cited ``92 classical / 46
+quantum'' for this attestation; that number belonged to a \emph{different}
+riverrun proof at a different configuration. At the attestation's actual earlier
+setting (20 queries) the real figure was 28 classical / 14 quantum --- too few to
+call post-quantum in any meaningful sense. We raised the query count to 128,
+which yields 124 classical / 62 quantum. That 62 is the \emph{ceiling} of the
+QM31 field: additional queries do not exceed it, and surpassing it requires a
+larger extension field --- new cryptography, not a configuration change.
+
+\intuition{We caught our own overclaim before a judge could. The honest number is
+smaller than the one first written, we fixed it, and we turned the dial up to the
+strongest setting this construction allows. 62 quantum bits is real but below the
+128-bit comfort level --- so we say ``post-quantum in construction, demonstrated
+at the field's ceiling'', not ``quantum-proof forever''.}
+
+\subsection{Other stated limits}
+
+The attestation proves structure, not hash-preimage security: a Poseidon2
+collision could in principle substitute one leaf for another of equal hash --- the
+pool's assumption to make, not this layer's to remove. The attestation is also a
+\emph{parallel} artifact: the pool exposes \code{get\_root} but does not consume
+this attestation today; wiring the pool to require it is a contract change and is
+not claimed as done. One reconstructed event field, \code{ledgerClosedAt}, is
+returned empty, as the archive did not capture per-ledger close times and the
+client stores but does not act on it.
+
+% ---------------- 6 ----------------
+\section{Evaluation}
+
+Every result below reproduces from the public repository against Stellar testnet.
+
+\paragraph{Real on-chain demonstration.} The four deployed Nethermind SPP
+contracts have emitted no events. Rather than demonstrate on nothing, we deployed
+Nethermind's own \code{asp-membership} contract unmodified to testnet
+(\code{CDP7Z7U2W45K...}) and inserted fifteen real leaves via on-chain
+\code{insert\_leaf} calls, each emitting a real \code{LeafAdded} event. The
+archive captured all fifteen; the full Layer-3 cycle then ran over that real
+history:
+
+\begin{lstlisting}
+$ node bin/spp-index.mjs attest CDP7Z7U2W45K...
+  post-quantum attestation: 134,357 bytes, covers root indices 0..14
+
+$ verify-asp-history attestation.postcard 0 <first> <last> 15
+  VALID: an honest append-only chain of 15 root updates.
+
+$ verify-asp-history attestation.postcard 0 <first> <last^1> 15
+  INVALID: this attestation does not verify against those public values.
+\end{lstlisting}
+
+\paragraph{Protocol conformance.} A conformance test builds a real
+\code{getEvents} response and decodes every served event through
+\code{@stellar/stellar-base} --- the codec the SPP client itself uses --- checking
+each yields the exact \code{\{index, leaf, root\}} the wallet expects, and that
+every field the client's struct requires is present and correctly typed. Served
+live, the archive returns all fifteen leaves as base64-XDR that the canonical
+codec decodes to indices $0\dots14$ with the correct roots.
+
+\paragraph{Test suite.} 22 JavaScript tests and 3 Rust tests, all passing. They
+lock the completeness accounting, the retention-refusal detection, the U256
+canonicalisation (a real bug the internal audit caught: two encodings of one root
+must key identically, or an index treats one root as two), the bootnode control
+flow, the byte-exact XDR encoder, and the struct-level drop-in conformance.
+
+% ---------------- 7 ----------------
+\section{Reproducibility}
+
+\begin{lstlisting}
+git clone https://github.com/Galmanus/spp-compliance-layer
+cd spp-compliance-layer && npm install && npm test        # 22 JS tests
+cd attestation && cargo test --release                    # 3 Rust tests
+# audit (executes against the real deployed WASM):
+python3 -m sorohunter.cli scan <pool-id> --network testnet
+\end{lstlisting}
+
+The retention window, the sorohunter probe counts, the attestation size, and the
+conformance decode are all reproducible from the commands in the repository's
+\code{docs/EVIDENCE.md} and \code{docs/LIVE-DEMONSTRATION.md}.
+
+% ---------------- 8 ----------------
+\section{Conclusion}
+
+A private-payment wallet's balance depends on history a Stellar RPC deletes in
+about seven days. The ecosystem's answer is a bootnode the wallet must trust,
+whose own documentation lists forged history and selective omission as
+unmitigated risks. This project completes that component: a drop-in bootnode that
+the unmodified SPP client can point at, which replaces trust with proof --- an
+execution-based audit of the primitives, a completeness proof over the archived
+history, and a post-quantum attestation that the compliance root history is an
+honest append-only chain. Its claims are measured on real on-chain data, and its
+limits --- a 62-bit quantum ceiling, a structure-not-preimage attestation, a
+privacy layer that remains BN254 --- are named rather than hidden. The strongest
+version of this work is not the one that claims the most; it is the one whose
+every number a judge can reproduce and whose every limit it states first.
+
+\vfill
+\begin{center}\small\color{ink}\rule{0.4\linewidth}{0.4pt}\\[0.4em]
+\url{https://github.com/Galmanus/spp-compliance-layer} \quad|\quad MIT
+\end{center}
+
+\end{document}
