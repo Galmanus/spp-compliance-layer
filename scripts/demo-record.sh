@@ -8,6 +8,20 @@ ASP=CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
 ATTEST=attestation/target/release/attest-asp-history
 VERIFY=attestation/target/release/verify-asp-history
 
+# Ensure the index holds the demo history (from the committed capture if the RPC
+# has already forgotten it), so the recording never fabricates numbers.
+NLEAVES=$(node -e "
+import('./lib/store.mjs').then(m => {
+  const s = m.openStore();
+  s.registerPool('$ASP', 3968320, 'ASP membership');
+  if (s.aspRootSteps('$ASP').length === 0) {
+    const cap = JSON.parse(require('fs').readFileSync('fixtures/asp-history.captured.json','utf8'));
+    for (const st of cap.steps) s.ingestAspRoot('$ASP', st);
+  }
+  console.log(s.aspRootSteps('$ASP').length);
+  s.close();
+})" 2>/dev/null)
+
 # Palette (mapped to an editorial ink/bone/klein theme in agg):
 #   36 accent (klein)   32 affirm (soft green)   31 refuse (soft coral)
 #   2 dim (muted bone)   1;* bold
@@ -29,16 +43,16 @@ node bin/spp-index.mjs retention 2>/dev/null | head -1 | sed 's/^/  /'
 out  "${D}the pool's history leaves the window during the judging weekend.${N}"
 gap 1.0
 
-beat "2 · the index keeps what the RPC will delete — 15 real on-chain leaves."
+beat "2 · the index keeps what the RPC will delete — ${NLEAVES} real on-chain leaves."
 cmd  "spp-index attest  (a post-quantum STARK, no trusted setup)"
-BYTES=$(node bin/spp-index.mjs attest "$ASP" 2>/dev/null | grep -oE '[0-9]+ bytes' | grep -oE '[0-9]+')
-out  "captured 15 real leaves — indices 0..14"
-out  "post-quantum attestation: $(( ${BYTES:-134357} / 1024 )) KB"
-gap 1.0
-
-# Prove once, reuse for the honest and tampered checks.
+# Prove once from the real captured history; every number below is that proof's.
 node -e "import('./lib/store.mjs').then(m=>{const s=m.openStore();const st=s.aspRootSteps('$ASP');require('fs').writeFileSync('/tmp/d.json',JSON.stringify(st.map(x=>({index:x.index,root:x.root}))));s.close()})"
 PV=$($ATTEST /tmp/d.json /tmp/dout | tail -1)
+BYTES=$(echo "$PV" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).proof_bytes))")
+out  "captured ${NLEAVES} real leaves — indices 0..$(( NLEAVES - 1 ))"
+out  "post-quantum attestation: $(( BYTES / 1024 )) KB"
+gap 1.0
+
 read A0 F0 L0 E0 <<< "$(echo "$PV" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.start_index,j.first_root_limbs,j.last_root_limbs,j.events)})")"
 
 beat "3 · a regulator verifies it — quantum-resistant, nothing to trust."

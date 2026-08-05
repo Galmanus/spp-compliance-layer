@@ -12,7 +12,7 @@ import { ingestAll } from "../lib/ingest.mjs";
 import { measureRetention, getLatestLedger } from "../lib/rpc.mjs";
 import { serve } from "../lib/serve.mjs";
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
@@ -260,12 +260,26 @@ async function cmdAttest() {
   //   cd attestation && cargo build --release
   const prover = process.env.ATTEST_BIN ??
     join(HERE, "..", "attestation", "target", "release", "attest-asp-history");
+  if (!existsSync(prover)) {
+    console.error(
+      `the attestation binary is not built yet.\n` +
+        `  build it once:  cd attestation && cargo build --release\n` +
+        `  (or point ATTEST_BIN at an existing attest-asp-history)`
+    );
+    process.exit(1);
+  }
   const stepsJson = join(tmpdir(), `asp-steps-${Date.now()}.json`);
   const outDir = join(tmpdir(), `asp-attest-${Date.now()}`);
   writeFileSync(stepsJson, JSON.stringify(steps.map((s) => ({ index: s.index, root: s.root }))));
 
   console.log(`attesting ${steps.length} ASP root updates for ${pool} ...`);
-  const out = execFileSync(prover, [stepsJson, outDir], { maxBuffer: 1 << 24 }).toString();
+  let out;
+  try {
+    out = execFileSync(prover, [stepsJson, outDir], { maxBuffer: 1 << 24 }).toString();
+  } catch (err) {
+    console.error(`the attestation prover failed: ${err.message.split("\n")[0]}`);
+    process.exit(1);
+  }
   const r = JSON.parse(out.trim().split("\n").pop());
   console.log(`  post-quantum attestation: ${r.proof_bytes} bytes`);
   console.log(`  covers root indices ${steps[0].index}..${steps[steps.length - 1].index}`);

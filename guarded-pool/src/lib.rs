@@ -94,3 +94,59 @@ impl GuardedPool {
         env.storage().instance().get(&DataKey::Gate).expect("uninitialised")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::{contract, contractimpl, testutils::Address as _};
+
+    // A stand-in gate: is_attested returns true only for one stored "good" key.
+    #[contract]
+    struct MockGate;
+    #[contractimpl]
+    impl MockGate {
+        pub fn __constructor(env: Env, good: BytesN<32>) {
+            env.storage().instance().set(&0u32, &good);
+        }
+        pub fn is_attested(env: Env, root_key: BytesN<32>) -> bool {
+            let good: BytesN<32> = env.storage().instance().get(&0u32).unwrap();
+            root_key == good
+        }
+    }
+
+    fn setup(env: &Env) -> (GuardedPoolClient, BytesN<32>, Address) {
+        env.mock_all_auths();
+        let good = BytesN::from_array(env, &[1u8; 32]);
+        let gate = env.register(MockGate, (good.clone(),));
+        let pool = env.register(GuardedPool, (gate,));
+        (GuardedPoolClient::new(env, &pool), good, Address::generate(env))
+    }
+
+    #[test]
+    fn spend_succeeds_against_an_attested_root() {
+        let env = Env::default();
+        let (pool, good, spender) = setup(&env);
+        let note = BytesN::from_array(&env, &[9u8; 32]);
+        assert!(pool.spend(&spender, &good, &note));
+        assert!(pool.is_spent(&note));
+    }
+
+    #[test]
+    fn spend_is_refused_against_an_unattested_root() {
+        let env = Env::default();
+        let (pool, _good, spender) = setup(&env);
+        let bad = BytesN::from_array(&env, &[2u8; 32]);
+        let note = BytesN::from_array(&env, &[8u8; 32]);
+        assert!(pool.try_spend(&spender, &bad, &note).is_err());
+        assert!(!pool.is_spent(&note), "a refused spend records nothing");
+    }
+
+    #[test]
+    fn a_note_cannot_be_replayed() {
+        let env = Env::default();
+        let (pool, good, spender) = setup(&env);
+        let note = BytesN::from_array(&env, &[7u8; 32]);
+        assert!(pool.spend(&spender, &good, &note));
+        assert!(pool.try_spend(&spender, &good, &note).is_err(), "replay refused");
+    }
+}
