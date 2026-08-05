@@ -76,6 +76,76 @@ fn onchain_cpu_across_query_counts() {
 }
 
 #[test]
+fn admit_root_gates_state_on_a_valid_proof() {
+    let env = Env::default();
+    env.cost_estimate().budget().reset_unlimited();
+    let id = env.register(wasmcontract::WASM, ());
+    let client = wasmcontract::Client::new(&env, &id);
+
+    let steps = history(15);
+    let proof = prove_asp_history(&steps, 4, 40);
+    let bytes = proof.to_postcard();
+    let pubs = publics_le(&steps);
+
+    env.cost_estimate().budget().reset_unlimited();
+    let idx = client.admit_root(
+        &Bytes::from_slice(&env, &bytes),
+        &Bytes::from_slice(&env, &pubs),
+        &(steps.len() as u32),
+        &40u32,
+    );
+    let cpu = env.cost_estimate().budget().cpu_instruction_cost();
+    std::println!(
+        "\n[admit_root] 40q: verify + store + event = {} cpu_insns ({:.1}% of 400M cap), admitted index {}",
+        cpu,
+        cpu as f64 / 4_000_000.0,
+        idx,
+    );
+    assert_eq!(idx, 14, "15 leaves from index 0 -> last index 14");
+
+    // the gated state now reflects the admitted root
+    let key = root_key(&env, &steps[steps.len() - 1].root);
+    assert!(client.is_attested(&key), "admitted root must read back as attested");
+
+    // a root that was never admitted is not attested
+    let other = root_key(&env, &steps[0].root);
+    assert!(!client.is_attested(&other), "an un-admitted root must not be attested");
+}
+
+#[test]
+#[should_panic]
+fn admit_root_rejects_a_tampered_proof_and_changes_no_state() {
+    let env = Env::default();
+    let id = env.register(wasmcontract::WASM, ());
+    let client = wasmcontract::Client::new(&env, &id);
+
+    let steps = history(15);
+    let proof = prove_asp_history(&steps, 4, 40);
+    let bytes = proof.to_postcard();
+    let mut pubs = publics_le(&steps);
+    let n = pubs.len();
+    pubs[n - 1] ^= 1; // tamper the last root limb
+
+    // must panic: no root admitted without a valid post-quantum proof
+    client.admit_root(
+        &Bytes::from_slice(&env, &bytes),
+        &Bytes::from_slice(&env, &pubs),
+        &(steps.len() as u32),
+        &40u32,
+    );
+}
+
+// keccak256 of the LE limbs, mirroring the contract's root_key, for the test to
+// look up admitted roots.
+fn root_key(env: &Env, root: &[u64; ROOT_LIMBS]) -> soroban_sdk::BytesN<32> {
+    let mut bytes = Bytes::new(env);
+    for l in root {
+        bytes.extend_from_array(&l.to_le_bytes());
+    }
+    env.crypto().keccak256(&bytes).to_bytes()
+}
+
+#[test]
 fn onchain_rejects_a_tampered_root() {
     let env = Env::default();
     env.cost_estimate().budget().reset_unlimited();

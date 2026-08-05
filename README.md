@@ -22,29 +22,33 @@ reference bootnode's own docs say it lacks.**
 [![lane](https://img.shields.io/badge/lane-Privacy%20%C2%B7%20OpenZeppelin%20%2B%20Nethermind-orange)](https://github.com/NethermindEth/stellar-private-payments)
 [![license](https://img.shields.io/badge/license-MIT-blue)](#license)
 
-## A first on Stellar — a post-quantum proof verified on-chain
+## A first on Stellar — a post-quantum proof that gates on-chain state
 
-The Layer-3 attestation does not only verify off-chain. A **hash-based,
-trusted-setup-free, post-quantum Circle-STARK** that a privacy pool's compliance
-root history is an honest append-only chain is **verified inside a Soroban
-contract, in a single Stellar transaction** — over the *real* 15-leaf history,
-with live receipts:
+The Layer-3 attestation does not only verify off-chain, and it is not a parallel
+decoration. A **hash-based, trusted-setup-free, post-quantum Circle-STARK** that
+a privacy pool's compliance root history is an honest append-only chain is
+**verified inside a Soroban contract, in a single Stellar transaction**, and made
+**load-bearing**: a root is admitted as compliance-valid on-chain *only* if the
+post-quantum proof verifies in the same transaction. Over the *real* 15-leaf
+history, with live receipts:
 
 | | on Stellar testnet |
 |:--|:--|
-| Contract | `CCWNNU4K3LWEPFRI7HLXV2WA2CV7C4Z7MFMWP7I7JZWESLTLPNHPCWRG` |
-| Honest proof → `true` | tx [`96110dc1…`](https://stellar.expert/explorer/testnet/tx/96110dc19ea1ea63b888bbcd02fbb7c2c76a5d91ff03aa2ce14797e7f83e6718) |
-| Tampered root → `false` | tx [`ee36ca3d…`](https://stellar.expert/explorer/testnet/tx/ee36ca3dacb7e7b0c9dfa83afbcb07a5f5b775a27d9674678fa005e07eadea5f) |
-| Cost | 260M instructions (65% of one tx), 112 KB wasm, ~0.0385 XLM |
+| Gated contract | `CA2ZTJXJAXA42M5HYD7YVQNYLCYS2FVQSSQ2MMERC5ODHSK6D7OWZMUY` |
+| Valid proof admits the root | tx [`86933844…`](https://stellar.expert/explorer/testnet/tx/86933844145b5be2274f0df59c7af748ea4337893b35dd9869c5677ea2a4e636) → index `14`, emits `admitted` |
+| `is_attested(root)` after | `true` for the admitted root, `false` for any other |
+| Tampered proof | transaction **rejected on-chain** — no root admitted |
+| Pure verify (first demo) | `true` [`96110dc1…`](https://stellar.expert/explorer/testnet/tx/96110dc19ea1ea63b888bbcd02fbb7c2c76a5d91ff03aa2ce14797e7f83e6718), tampered `false` [`ee36ca3d…`](https://stellar.expert/explorer/testnet/tx/ee36ca3dacb7e7b0c9dfa83afbcb07a5f5b775a27d9674678fa005e07eadea5f) |
+| Cost | 260M instructions (65% of one tx), 115 KB wasm, ~0.0385 XLM |
 
 To our knowledge, the first transparent post-quantum proof verified on-chain on
-Stellar in a privacy-compliance context — a checkable claim, given the SDF's own
-statement that no drop-in post-quantum replacement for pairing SNARKs exists, and
-that Stellar's privacy stack (SPP Groth16, OZ UltraHonk) is entirely BN254. On
-chain the security is 48 classical / **24 quantum** bits at 40 queries (one
-transaction); the stronger 62-quantum-bit version runs off-chain. Both figures
-are stated, neither is hidden. Full detail and reproduction:
-**[docs/ONCHAIN-VERIFICATION.md](docs/ONCHAIN-VERIFICATION.md)**.
+Stellar in a privacy-compliance context — and the first to *gate on-chain state*
+in one. A checkable claim, given the SDF's own statement that no drop-in
+post-quantum replacement for pairing SNARKs exists, and that Stellar's privacy
+stack (SPP Groth16, OZ UltraHonk) is entirely BN254. On chain the security is 48
+classical / **24 quantum** bits at 40 queries (one transaction); the stronger
+62-quantum-bit version runs off-chain. Both figures are stated, neither hidden.
+Full detail and reproduction: **[docs/ONCHAIN-VERIFICATION.md](docs/ONCHAIN-VERIFICATION.md)**.
 
 ---
 
