@@ -21,6 +21,37 @@ primitives (SPP Groth16, OpenZeppelin UltraHonk) are entirely BN254.
 Both transactions verify the attestation of the **real** 15-leaf history captured
 from the deployed `asp-membership` contract — not a synthetic fixture.
 
+## The attestation is load-bearing, not parallel: the compliance gate
+
+Verifying a proof is one thing; making on-chain state *depend* on it is what
+turns the attestation from a parallel artifact into a working mechanism. The
+contract's `admit_root` verifies the post-quantum attestation and **only on a
+valid proof** records the endpoint root as compliance-admitted and emits an
+`admitted` event. Without a valid proof, the transaction is rejected and no root
+is admitted. A pool or wallet checks `is_attested(root)` before honouring a
+membership proof against that root.
+
+Receipts (Stellar testnet), gated contract
+`CA2ZTJXJAXA42M5HYD7YVQNYLCYS2FVQSSQ2MMERC5ODHSK6D7OWZMUY`:
+
+- **Valid proof admits the real root** →
+  tx `86933844145b5be2274f0df59c7af748ea4337893b35dd9869c5677ea2a4e636`,
+  returns index `14`, emits
+  `admitted(root=42ee8f6f…) = 14`;
+- `is_attested(42ee8f6f…)` → **`true`** (the admitted root);
+- `is_attested(0000…)` → **`false`** (a root never admitted);
+- **Tampered proof is rejected on-chain** → the `admit_root` transaction traps
+  (`post-quantum attestation did not verify: root not admitted`), changing no
+  state.
+
+`admit_root` (verify + storage write + event) costs 260,595,609 instructions at
+40 queries --- 65.1% of one transaction's budget, essentially the verification
+cost, since the storage write is negligible beside the STARK.
+
+This is the closed loop: a root is compliance-admitted on Stellar **only** if a
+hash-based post-quantum proof of the honest append-only history verifies in the
+same transaction.
+
 ## What was verified
 
 The contract (`onchain-verifier/`) takes the postcard-encoded append-only-history

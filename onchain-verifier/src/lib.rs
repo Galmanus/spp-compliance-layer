@@ -1,21 +1,27 @@
 #![no_std]
-//! On-chain verifier for the post-quantum ASP-history attestation.
+//! On-chain verifier and compliance gate for the post-quantum ASP-history
+//! attestation.
 //!
 //! This is the Layer-3 attestation, moved from an off-chain binary into a
-//! Soroban contract. It takes the postcard-encoded append-only-history STARK
-//! proof and its public values, and returns whether the proof verifies --- a
-//! hash-based, trusted-setup-free, post-quantum check running on Stellar itself.
+//! Soroban contract, and then made load-bearing. `verify` checks a
+//! postcard-encoded append-only-history Circle-STARK proof and returns the
+//! verdict --- a hash-based, trusted-setup-free, post-quantum check running on
+//! Stellar itself. `admit_root` goes further: it verifies, and only if the proof
+//! holds does it record the attested endpoint root as compliance-admitted and
+//! emit an event. Without a valid post-quantum proof, no root is admitted --- the
+//! attestation is not a parallel artifact, it gates on-chain state.
 //!
 //! `publics` is 19 little-endian u64 limbs: `start_index` (1) followed by
 //! `first_root` (9) and `last_root` (9), matching `verify_asp_history`'s public
 //! inputs (`ROOT_LIMBS = 9`). `real_rows` and `num_queries` are the AIR height
 //! and the FRI query count the proof was produced with; they must match, or the
-//! proof does not verify. Any malformed input is a rejection (`false`), never a
-//! panic.
+//! proof does not verify.
 
 extern crate alloc;
 
-use soroban_sdk::{contract, contractimpl, Bytes, Env};
+use soroban_sdk::{
+    contract, contractimpl, contracttype, symbol_short, Bytes, BytesN, Env, Symbol,
+};
 
 use riverrun_m31::asp_history::{verify_asp_history, AspHistoryProof, ROOT_LIMBS};
 
@@ -23,15 +29,72 @@ use riverrun_m31::asp_history::{verify_asp_history, AspHistoryProof, ROOT_LIMBS}
 const PUBLICS_U64S: usize = 1 + 2 * ROOT_LIMBS;
 const PUBLICS_BYTES: u32 = (PUBLICS_U64S * 8) as u32;
 
+const EVENT_ADMITTED: Symbol = symbol_short!("admitted");
+
+/// Persistent storage key: an admitted root, keyed by the keccak256 of its
+/// canonical little-endian limbs.
+#[contracttype]
+pub enum Key {
+    Root(BytesN<32>),
+}
+
+/// A decoded, verified attestation's public endpoints.
+struct Decoded {
+    start_index: u64,
+    first_root: [u64; ROOT_LIMBS],
+    last_root: [u64; ROOT_LIMBS],
+}
+
+fn decode_publics(publics: &Bytes) -> Option<Decoded> {
+    if publics.len() != PUBLICS_BYTES {
+        return None;
+    }
+    let mut pub_bytes = [0u8; PUBLICS_U64S * 8];
+    publics.copy_into_slice(&mut pub_bytes);
+    let mut limbs = [0u64; PUBLICS_U64S];
+    for (i, chunk) in pub_bytes.chunks_exact(8).enumerate() {
+        limbs[i] = u64::from_le_bytes(chunk.try_into().unwrap());
+    }
+    let mut first_root = [0u64; ROOT_LIMBS];
+    let mut last_root = [0u64; ROOT_LIMBS];
+    first_root.copy_from_slice(&limbs[1..1 + ROOT_LIMBS]);
+    last_root.copy_from_slice(&limbs[1 + ROOT_LIMBS..]);
+    Some(Decoded { start_index: limbs[0], first_root, last_root })
+}
+
+fn decode_proof(proof: &Bytes) -> Option<AspHistoryProof> {
+    let mut buf = alloc::vec![0u8; proof.len() as usize];
+    proof.copy_into_slice(&mut buf);
+    AspHistoryProof::from_postcard(&buf)
+}
+
+fn check(d: &Decoded, proof: &AspHistoryProof, real_rows: u32, num_queries: u32) -> bool {
+    verify_asp_history(
+        proof,
+        d.start_index,
+        d.first_root,
+        d.last_root,
+        real_rows as usize,
+        num_queries as usize,
+    )
+}
+
+/// Hash the last root's canonical LE limbs to a 32-byte key.
+fn root_key(env: &Env, root: &[u64; ROOT_LIMBS]) -> BytesN<32> {
+    let mut bytes = Bytes::new(env);
+    for l in root {
+        bytes.extend_from_array(&l.to_le_bytes());
+    }
+    env.crypto().keccak256(&bytes).to_bytes()
+}
+
 #[contract]
 pub struct AspHistoryVerifier;
 
 #[contractimpl]
 impl AspHistoryVerifier {
-    /// Verify a post-quantum append-only-history attestation on-chain.
-    ///
-    /// Returns `true` iff `proof` is a valid Circle-STARK proof that the root
-    /// history is an honest append-only chain with the given public endpoints.
+    /// Verify a post-quantum append-only-history attestation on-chain (pure:
+    /// no state change). Returns `true` iff the proof holds.
     pub fn verify(
         env: Env,
         proof: Bytes,
@@ -39,39 +102,45 @@ impl AspHistoryVerifier {
         real_rows: u32,
         num_queries: u32,
     ) -> bool {
-        if publics.len() != PUBLICS_BYTES {
-            return false;
-        }
-
-        // Decode the proof from its postcard wire form.
-        let mut proof_buf = alloc::vec![0u8; proof.len() as usize];
-        proof.copy_into_slice(&mut proof_buf);
-        let Some(proof) = AspHistoryProof::from_postcard(&proof_buf) else {
+        let (Some(d), Some(p)) = (decode_publics(&publics), decode_proof(&proof)) else {
             return false;
         };
+        let _ = &env; // host-keccak arm reaches the host directly
+        check(&d, &p, real_rows, num_queries)
+    }
 
-        // Decode the 19 little-endian u64 public limbs.
-        let mut pub_bytes = [0u8; PUBLICS_U64S * 8];
-        publics.copy_into_slice(&mut pub_bytes);
-        let mut limbs = [0u64; PUBLICS_U64S];
-        for (i, chunk) in pub_bytes.chunks_exact(8).enumerate() {
-            limbs[i] = u64::from_le_bytes(chunk.try_into().unwrap());
+    /// The compliance gate: verify the post-quantum attestation, and ONLY on a
+    /// valid proof record the endpoint root as compliance-admitted and emit an
+    /// `admitted` event. Panics (rejecting the transaction) if the proof does
+    /// not hold, so no root is ever admitted without a valid post-quantum proof.
+    ///
+    /// Returns the admitted root's index. This is what makes the attestation
+    /// load-bearing rather than parallel: on-chain state depends on it.
+    pub fn admit_root(
+        env: Env,
+        proof: Bytes,
+        publics: Bytes,
+        real_rows: u32,
+        num_queries: u32,
+    ) -> u64 {
+        let d = decode_publics(&publics).expect("malformed public values");
+        let p = decode_proof(&proof).expect("malformed proof");
+        if !check(&d, &p, real_rows, num_queries) {
+            panic!("post-quantum attestation did not verify: root not admitted");
         }
+        // real_rows real leaves means the last index is real_rows - 1, counting
+        // from start_index.
+        let admitted_index = d.start_index + real_rows as u64 - 1;
+        let key = root_key(&env, &d.last_root);
+        env.storage().persistent().set(&Key::Root(key.clone()), &admitted_index);
+        env.events().publish((EVENT_ADMITTED, key), admitted_index);
+        admitted_index
+    }
 
-        let start_index = limbs[0];
-        let mut first_root = [0u64; ROOT_LIMBS];
-        let mut last_root = [0u64; ROOT_LIMBS];
-        first_root.copy_from_slice(&limbs[1..1 + ROOT_LIMBS]);
-        last_root.copy_from_slice(&limbs[1 + ROOT_LIMBS..]);
-
-        let _ = &env; // the host-keccak arm reaches the host directly
-        verify_asp_history(
-            &proof,
-            start_index,
-            first_root,
-            last_root,
-            real_rows as usize,
-            num_queries as usize,
-        )
+    /// Whether a root (identified by the keccak256 of its LE limbs) has been
+    /// admitted by a valid post-quantum attestation. A pool or wallet checks
+    /// this before honouring a membership proof against that root.
+    pub fn is_attested(env: Env, root_key: BytesN<32>) -> bool {
+        env.storage().persistent().has(&Key::Root(root_key))
     }
 }
