@@ -20,18 +20,13 @@ import {
 // checks skip rather than fail — the encoder is still exercised by the bootnode
 // tests. Where a developer HAS the SDK, this is the proof of byte-exactness.
 const require = createRequire(import.meta.url);
-let xdr = null;
-for (const p of [
-  "/home/galmanus/ramp-kit/node_modules/@stellar/stellar-base",
-  "@stellar/stellar-base",
-]) {
-  try {
-    ({ xdr } = require(p));
-    break;
-  } catch {
-    /* try next */
-  }
+let base = null;
+try {
+  base = require("@stellar/stellar-base");
+} catch {
+  /* not installed — the byte-exactness checks skip */
 }
+const xdr = base?.xdr ?? null;
 
 const canonicalU256 = (dec) => {
   let n = BigInt(dec);
@@ -76,7 +71,7 @@ test("scval-xdr matches @stellar/stellar-base byte for byte", { skip: !xdr }, ()
 });
 
 test("encoded ScVals round-trip back through the SDK to the same native values", { skip: !xdr }, () => {
-  const { scValToNative } = require("/home/galmanus/ramp-kit/node_modules/@stellar/stellar-base");
+  const { scValToNative } = base;
   const v = leafAddedValueXdr({ index: 7, leaf: "42", root: "9667" });
   const native = scValToNative(xdr.ScVal.fromXDR(v, "base64"));
   assert.equal(native.index.toString(), "7");

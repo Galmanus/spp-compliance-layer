@@ -19,16 +19,10 @@ import { dispatch } from "../lib/bootnode.mjs";
 // the wallet expects.
 const require = createRequire(import.meta.url);
 let base = null;
-for (const p of [
-  "/home/galmanus/ramp-kit/node_modules/@stellar/stellar-base",
-  "@stellar/stellar-base",
-]) {
-  try {
-    base = require(p);
-    break;
-  } catch {
-    /* try next */
-  }
+try {
+  base = require("@stellar/stellar-base");
+} catch {
+  /* not installed — the XDR-decode check skips */
 }
 
 const POOL = "CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR";
