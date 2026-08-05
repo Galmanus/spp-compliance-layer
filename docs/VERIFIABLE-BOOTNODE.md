@@ -64,8 +64,8 @@ also provable:
 
 | Attack vector (their `bootnode.md`) | Cryptographic mitigation here | Where |
 |:--|:--|:--|
-| Serve a forged event history (`:50`) | The Layer-3 Circle-STARK proves the ASP root history is an append-only chain; a forged or reordered history cannot produce a valid proof. It is unprovable, not merely rejected. | `attestation/`, `docs/LAYER3-DESIGN.md` |
-| Selective omission / censor events (`:41`, `:52`) | `getCoverage` returns the coverage-interval completeness proof for the served range; an omitted ledger is a reported gap, so silent omission becomes a visible, checkable hole. | `lib/bootnode.mjs` `getCoverageResult`, `lib/store.mjs` `gaps()` |
+| Selective omission / censor events (`:41`, `:52`) | **The core mitigation.** `getCoverage` returns the coverage-interval completeness proof from genesis; an omitted ledger is a reported gap, so silent omission becomes a visible, checkable hole. | `lib/bootnode.mjs` `getCoverageResult`, `lib/store.mjs` `gaps()` |
+| Serve a forged root history (`:50`) | The Layer-3 Circle-STARK adds a **post-quantum proof of the append-only index structure** (gap-free indices, endpoints pinned to public values) over the served roots. It witnesses the roots rather than re-deriving them, so it proves the *shape* against endpoints a verifier knows independently — not that the roots are legitimate; that binding is the coverage proof's job (row above). Stated precisely, not overclaimed. | `attestation/`, `docs/LAYER3-DESIGN.md` |
 | Misleading `fromLedger` at handoff (`:44`, `:54`) | The handoff `fromLedger` is bounded by proven-contiguous coverage from genesis; a wallet can verify the archive actually held everything below the handoff point before trusting it. | `lib/bootnode.mjs` `getEventsResult`, `getCoverage` |
 | Incorrect local reconstruction (`:50`) | The primitives whose events are served were audited by execution, not inference — 15 probes run against the deployed WASM. | `docs/audit/sorohunter-spp-pool.md` |
 

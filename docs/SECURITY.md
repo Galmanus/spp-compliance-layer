@@ -78,20 +78,31 @@ the 2025 developments a reviewer will know. Full grounding in
 
 ## What is assumed, not proven
 
-1. **The root is a witnessed label, not a reproven hash.** The ASP hashes with
-   Poseidon2 over BN254; this STARK is over Mersenne-31. The AIR does no
-   arithmetic on the root — it proves the *shape* of the history around
-   witnessed root values. A collision in the ASP's Poseidon2 could substitute
-   one leaf for another of equal hash; that is the SPP's assumption to make, and
-   this layer does not solve it.
+1. **The roots are witnessed labels, and are not chained or anchored.** The AIR
+   does no arithmetic on the roots — it does not derive `root_{n+1}` from
+   `root_n` (the Poseidon2-BN254 compression is a different-field oracle, out of
+   scope), and `first_root`/`last_root` are public *inputs* a prover chooses.
+   Consequently the attestation proves the append-only *index structure*
+   (gap-free consecutive indices, pinned endpoints, padding) — **not** that the
+   roots are the real ASP roots. A fully fabricated sequence verifies: attesting
+   `[{index:0,root:1},{1,999999},{2,7}]` yields a VALID proof. The guarantee is
+   meaningful only to a verifier who **independently knows the true endpoints**
+   (the ASP's genesis and current roots, readable on-chain); for such a verifier
+   it proves the sequence between them is gap-free and correctly counted. See
+   [`LAYER3-DESIGN.md`](LAYER3-DESIGN.md).
 
-2. **The captured history is the real history.** The attestation proves the
-   history it is given is an honest chain. That the given history matches what
-   the chain actually emitted is the *index's* job, and the index's completeness
-   accounting (coverage intervals, gap reporting) is what backs it — a gap in
-   coverage is a gap in the guarantee, and is reported, never hidden.
+2. **The anti-omission / completeness guarantee is Layer 2's, not Layer 3's.**
+   That the captured history matches what the chain actually emitted is the
+   *index's* job, backed by the coverage-interval accounting from genesis (gaps
+   reported, never hidden). The attestation proves the *shape* of whatever
+   history it is given; the coverage proof is what binds that history to the
+   chain. Neither alone is the whole claim — together, against trusted endpoints,
+   they are.
 
-3. **The root tag encoding is injective.** BN254 roots (~254 bits) are carried
+3. **A Poseidon2 collision** could substitute one leaf for another of equal hash;
+   that is the SPP's assumption to make, and this layer does not solve it.
+
+4. **The root tag encoding is injective.** BN254 roots (~254 bits) are carried
    as nine 31-bit Mersenne limbs (279 bits of tag space), which is injective on
    distinct roots; `root_to_limbs` is tested for this in
    `mirror-pool`'s `asp_history` tests.

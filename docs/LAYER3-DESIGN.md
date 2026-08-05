@@ -15,38 +15,49 @@ out of scope. That path is closed, and closing it explicitly is the point —
 a hash-based attestation is only meaningful if it proves the *actual* hash or
 does not claim to.
 
-## What Layer 3 proves instead: the history, not the instant
+## What Layer 3 proves: the append-only INDEX STRUCTURE over witnessed roots
 
 Groth16 attests a single root at a single moment. A regulator in 2035 asking
-"was this approval set built honestly?" needs more than that a root exists —
-they need that the sequence of published roots is an **append-only chain**: each
-`LeafAddedEvent(leaf, index, root)` advanced the index by exactly one, and each
-root follows from inserting exactly that leaf at that position over the previous
-root, with no removal and no reordering.
+"was this approval set built honestly?" needs a statement about the *sequence*,
+not a snapshot. Layer 3 makes a precise, and deliberately narrow, one.
 
-That is a statement about the *transition* between roots, and it is exactly the
-compliance property that matters and that a snapshot proof cannot make. The
-history it is a statement about is precisely what Layer 2's index captures — and
-what the RPC deletes after seven days, which is why a durable attestation of it
-has standalone value.
+Read the AIR (`asp_history.rs`, `eval`). Its columns are `[index, root_limbs(9),
+is_real_selector]`; its public values are `[start_index, first_root, last_root]`.
+It enforces exactly:
 
-## The AIR, and why the expensive hash is not reproven
+- `is_real` is boolean;
+- **first row:** `index == start_index` and `root == first_root` (the low
+  endpoint is pinned to a public value);
+- **last row:** `root == last_root` (the high endpoint is pinned);
+- **real→real transition:** `index_{n+1} == index_n + 1` — gap-free, monotone,
+  no reordering *within the trace*;
+- **real→padding transition:** padding repeats the last root, so the tail pin is
+  meaningful however much padding follows.
 
-The Poseidon2-BN254 compression is a witnessed oracle, not a reproven circuit.
-The AIR constrains the STRUCTURE of the update:
+That is the whole constraint system. Two things it importantly does **not** do,
+and we state them plainly rather than let the word "chain" imply them:
 
-- `index_{n+1} = index_n + 1` — monotone, gap-free, matching the event stream;
-- the path recomputation touches exactly the siblings the tree's own algorithm
-  touches (`asp-membership/lib.rs:214-234`), witnessed;
-- `root_n` feeds `root_{n+1}` as the algorithm chains them.
+1. **It does not cryptographically chain the roots.** There is no constraint that
+   `root_{n+1}` is derived from `root_n` and a leaf — the Poseidon2-BN254
+   compression is a witnessed oracle in a different field (M31), out of scope, as
+   the honest-scope section below and `SECURITY.md` state. The intermediate roots
+   are free field elements.
+2. **It does not anchor the endpoints to reality.** `first_root` and `last_root`
+   are public *inputs*; a prover chooses them. Consequently a prover can attest a
+   *fabricated* sequence: any consecutively-indexed rows with any endpoints
+   verify. We verified this by executing it — attesting `[{0,1},{1,999},{2,7}]`
+   yields a VALID proof (see `attestation/tests` and `SECURITY.md`).
 
-The hash outputs along the path are witnessed field elements; the AIR proves the
-tree was UPDATED correctly given them, not that Poseidon2 is collision
-resistant — which the SPP itself does not claim, and which its own
-`docs/COMPRESSION-NOTE.md` counterpart in riverrun shows is false for the M31
-combiner too. What a post-quantum adversary cannot forge here is the *shape* of
-the history: a reordered or leaf-injected chain fails the index and continuity
-constraints regardless of hash strength.
+So the honest statement of the guarantee: **for a verifier who independently
+knows the true endpoints** (the ASP's genesis root and its current root, both
+readable on-chain from the ASP contract), the attestation proves the index
+sequence between them is gap-free, correctly counted, and monotone — an ordering
+and no-gap proof, post-quantum and verifiable on-chain in 2035. The *anti-omission
+completeness* guarantee — that the captured history matches what the chain
+actually emitted — is provided by **Layer 2's coverage-interval proof from
+genesis**, not by this attestation. Layer 3 proves the shape; Layer 2 proves the
+capture is complete; together, against trusted endpoints, they are the compliance
+statement a snapshot proof cannot make.
 
 ## Honest scope
 

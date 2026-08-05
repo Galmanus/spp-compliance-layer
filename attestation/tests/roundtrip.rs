@@ -32,6 +32,28 @@ fn an_honest_history_attests_and_verifies() {
     ));
 }
 
+// A DOCUMENTED property, not a bug: the AIR witnesses the roots — it constrains
+// the index STRUCTURE (gap-free, pinned endpoints) but does not chain the roots
+// or anchor the endpoints. So an arbitrary, fabricated sequence of roots also
+// verifies. The attestation's guarantee is meaningful only to a verifier who
+// independently knows the true endpoints; see docs/LAYER3-DESIGN.md and
+// docs/SECURITY.md. This test pins that we do not overclaim.
+#[test]
+fn witnessed_roots_a_fabricated_sequence_also_verifies() {
+    let steps = vec![
+        RootStep { index: 0, root: [1, 0, 0, 0, 0, 0, 0, 0, 0] },
+        RootStep { index: 1, root: [999_999, 0, 0, 0, 0, 0, 0, 0, 0] },
+        RootStep { index: 2, root: [7, 0, 0, 0, 0, 0, 0, 0, 0] },
+        RootStep { index: 3, root: [42_424_242, 0, 0, 0, 0, 0, 0, 0, 0] },
+    ];
+    let proof = prove_asp_history(&steps, 2, 20);
+    assert!(
+        verify_asp_history(&proof, 0, steps[0].root, steps[3].root, steps.len(), 20),
+        "roots are witnessed labels; a fabricated but gap-free sequence verifies — \
+         this is the documented scope, and the honesty limit stated up front"
+    );
+}
+
 #[test]
 fn a_different_final_root_is_rejected() {
     let steps = history(8);

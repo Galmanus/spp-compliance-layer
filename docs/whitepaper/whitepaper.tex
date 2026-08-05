@@ -305,9 +305,15 @@ The ASP root history is the compliance spine, and today it is attested by
 Groth16 over BN254: a scheme with a trusted setup, on a curve a future quantum
 computer breaks, recorded on a permanent ledger. We add a parallel attestation
 with none of those properties: a hash-based Circle-STARK (from the
-\code{riverrun-m31} crate) that proves the captured root history is a consistent
-\emph{append-only chain} --- indices $0,1,2,\dots$ with no gap, each root chained
-from the last, and the first and last roots pinned as public values.
+\code{riverrun-m31} crate) that proves the captured root history's append-only
+\emph{index structure} --- indices $0,1,2,\dots$ with no gap, and the first and
+last roots pinned as public values. It witnesses the roots rather than chaining
+them (the Poseidon2 compression is a different-field oracle, out of scope), so it
+proves the shape against endpoints a verifier knows independently, not that the
+roots are legitimate --- the completeness binding is Layer~2's coverage proof.
+We state this precisely rather than let ``append-only chain'' overclaim; the
+scope is in \code{docs/LAYER3-DESIGN.md} and a test pins that a fabricated
+sequence also verifies.
 
 This attestation is not only checkable off-chain, and it is not a parallel
 decoration. It is verified \emph{on-chain}, inside a Soroban contract, in a
