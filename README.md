@@ -173,7 +173,7 @@ flowchart LR
 |:--|:--|:--|:--|
 | **① Audit** | Fork-validated adversarial probing of the lane's own primitives; a finding is an executed invocation sequence, never an inference | ran, documented | [sorohunter](https://github.com/Galmanus/sorohunter) |
 | **② Index** | Captures pool + ASP events from genesis, past the RPC's 7-day window, and **proves completeness** instead of asserting it | running vs testnet | this repo |
-| **③ Attestation** | Hash-based Circle-STARK (Rust, [`attestation/`](attestation/)) that the ASP root history is an append-only chain — no trusted setup, no quantum expiry | tested, measured | STARK crate [riverrun-m31](https://github.com/Galmanus/mirror-pool) |
+| **③ Attestation** | Hash-based Circle-STARK (Rust, [`attestation/`](attestation/)) proving the ASP root history's append-only **index structure** (gap-free, pinned endpoints; roots witnessed — [see scope](docs/LAYER3-DESIGN.md)) — no trusted setup, no quantum expiry | tested, measured | STARK crate [riverrun-m31](https://github.com/Galmanus/mirror-pool) |
 
 ---
 
@@ -287,14 +287,19 @@ flowchart LR
     e0["LeafAdded #0<br/>root₀"] --> e1["LeafAdded #1<br/>root₁"] --> e2["LeafAdded #2<br/>root₂"] --> en["…root_n"]
     e0 -.->|"index +1, pinned first root"| air
     en -.->|"pinned last root"| air
-    air{{"AIR constraints:<br/>monotone gap-free index<br/>root chaining<br/>endpoints pinned"}}
-    air --> proof["STARK attestation<br/>reorder / inject → unprovable"]
+    air{{"AIR constraints:<br/>gap-free consecutive index<br/>endpoints pinned to public values<br/>padding repeats last root"}}
+    air --> proof["STARK attestation<br/>gap-free index structure,<br/>roots witnessed (see LAYER3-DESIGN)"]
 ```
 
 The BN254-Poseidon2 hash is a **witnessed oracle**, not reproven (different
 field from the M31 STARK; reproving it is out of scope and stated as such). What
-a quantum adversary cannot forge is the *shape* of the chain — a reordered or
-leaf-injected history is unprovable, not merely unverifiable.
+the STARK proves is the append-only **index structure** — gap-free consecutive
+indices with the endpoints pinned to public values — over witnessed roots. It
+does not chain the roots or anchor the endpoints, so it proves the shape against
+endpoints a verifier knows independently, not that the roots are legitimate; the
+completeness binding is Layer 2's coverage proof. Stated precisely in
+[`docs/LAYER3-DESIGN.md`](docs/LAYER3-DESIGN.md) — a test pins that a fabricated
+sequence also verifies, so the claim is not overstated.
 
 **Measured** — soundness is a query count the prover and verifier share
 (`attestation/src/lib.rs`). Bits are from riverrun-m31's own round-by-round

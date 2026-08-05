@@ -30,10 +30,12 @@ the exact risk this project addresses:
 > Proofs)*.
 
 Our durable index proves the ASP root history is **complete** (no omitted leaf
-goes unreported), and our post-quantum attestation proves it is an **honest
-append-only chain** (a censored or reordered history is unprovable). That is a
-direct mitigation of the set-provider-integrity risk the pattern itself flags —
-moved from "trust the provider / cross-check several" to "check one proof".
+goes unreported — the coverage proof that mitigates the set-provider-integrity
+risk), and our post-quantum attestation adds a proof of its **append-only index
+structure** (gap-free indices, endpoints pinned; the roots are witnessed — see
+[`LAYER3-DESIGN.md`](LAYER3-DESIGN.md), stated precisely). Together they move the
+guarantee from "trust the provider / cross-check several" to "check the coverage
+proof, and check one post-quantum proof of the structure".
 
 ## The proof system: Circle STARKs over Mersenne-31
 

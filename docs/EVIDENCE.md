@@ -83,10 +83,14 @@ attesting 15 ASP root updates for CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJO
 
 The attestation reproves no hash — the BN254-Poseidon2 compression is a
 witnessed oracle — which is why it is far smaller than every other proof in the
-`mirror-pool` crate. What it proves is structure: a reordered or leaf-injected
-history is **unprovable**, not merely rejected at verification. Two tests in
-`mirror-pool` (`a_reordered_history_cannot_even_be_proved`,
-`an_injected_leaf_breaks_the_index_chain`) pin this fail-closed behaviour.
+`mirror-pool` crate. What it proves is the append-only **index structure**:
+gap-free consecutive indices with the endpoints pinned to public values. It
+witnesses the roots (does not chain them), so it proves the shape against
+endpoints a verifier knows independently — a fabricated sequence with the same
+shape also verifies, which a roundtrip test pins on purpose
+(`witnessed_roots_a_fabricated_sequence_also_verifies`). The completeness binding
+— that the history is the real one — is §2's coverage proof, not this. Precisely
+stated in [LAYER3-DESIGN.md](LAYER3-DESIGN.md) and [SECURITY.md](SECURITY.md).
 
 ---
 
