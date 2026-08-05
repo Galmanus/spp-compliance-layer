@@ -35,10 +35,10 @@ Receipts (Stellar testnet), gated contract
 `CBY2N5KH26SS6O23FNZ3XICWIKAAQO7LVEDAOZ6HZ5GD6U52UDMV5WXW`:
 
 - **Valid proof admits the real root** →
-  tx `fa5865c3b740fc895957a1cf129ea9cf0763e7a706ed294546501ef1aff5c7ed`,
+  tx `30c6afb6c7667f14a36e49cb88e7ac1a9a4197344fc3d5070a1ad8e9ff5dc59a`,
   returns index `14`, emits
-  `admitted(root=42ee8f6f…) = 14`;
-- `is_attested(42ee8f6f…)` → **`true`** (the admitted root);
+  `admitted(root=c618a79b…) = 14`;
+- `is_attested(c618a79b…)` → **`true`** (the admitted root);
 - `is_attested(0000…)` → **`false`** (a root never admitted);
 - **Tampered proof is rejected on-chain** → the `admit_root` transaction traps
   (`post-quantum attestation did not verify: root not admitted`), changing no
@@ -82,8 +82,8 @@ Receipts (testnet), pool `CBO4RLRKYJ5442P6P4ZFUZSENBCFOGBSJW2Y34YQQRMUASVFVG7R6W
 wired to gate `CBY2N5KH…`:
 
 - **Spend against the attested root succeeds** →
-  tx `6005bd172de821b01db73f97ca2375b6d2804355ef91895efeb04b16cd844b92`,
-  emits `spent(root=42ee8f6f…)`, and `is_spent(note)` then reads `true`;
+  tx `e9d89613186c59653d546397c7ff789c6de53538c806a8f82d166c956ef3c602`,
+  emits `spent(root=c618a79b…)`, and `is_spent(note)` then reads `true`;
 - **Spend against a root the gate never admitted is refused** on-chain
   (`root is not compliance-attested by the gate; spend refused`);
 - **Replaying a spent note is refused** (`note already spent`).
