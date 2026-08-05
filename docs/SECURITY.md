@@ -89,7 +89,7 @@ system to place real value behind — stated here rather than left implied.
 # the append-only-chain constraints, and that a forged history never verifies:
 cd attestation && cargo test --release
 
-# the soundness accounting (92/46 bits), with the model and every error term:
-#   in the mirror-pool repo:
-cargo run --release --example soundness_budget
+# the soundness accounting for this config (124/62 bits at 128 queries), with the
+# round-by-round model and every error term, in the mirror-pool repo:
+cargo run --release --example qm31_ceiling
 ```
