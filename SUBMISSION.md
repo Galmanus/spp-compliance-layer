@@ -31,8 +31,8 @@ is an honest append-only chain — verified **natively on-chain**, and gating st
 
 | | receipt |
 |:--|:--|
-| Gate admits a root only on a valid proof | tx [`fa5865c3…`](https://stellar.expert/explorer/testnet/tx/fa5865c3b740fc895957a1cf129ea9cf0763e7a706ed294546501ef1aff5c7ed) (contract `CBY2N5KH…`) |
-| A pool spends only against an admitted root | tx [`6005bd17…`](https://stellar.expert/explorer/testnet/tx/6005bd172de821b01db73f97ca2375b6d2804355ef91895efeb04b16cd844b92) (contract `CBO4RLRK…`) |
+| Gate admits a root only on a valid proof | tx [`30c6afb6…`](https://stellar.expert/explorer/testnet/tx/30c6afb6c7667f14a36e49cb88e7ac1a9a4197344fc3d5070a1ad8e9ff5dc59a) (contract `CBY2N5KH…`) |
+| A pool spends only against an admitted root | tx [`e9d89613…`](https://stellar.expert/explorer/testnet/tx/e9d89613186c59653d546397c7ff789c6de53538c806a8f82d166c956ef3c602) (contract `CBO4RLRK…`) |
 | Tampered proof / un-admitted root | rejected on-chain, no state change |
 | Cost | 260M instructions (65% of one tx), 115 KB wasm |
 
