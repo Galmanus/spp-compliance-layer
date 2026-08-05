@@ -25,6 +25,11 @@ reference bootnode's own docs say it lacks.**
 > **Judges start here:** [`SUBMISSION.md`](SUBMISSION.md) — the 60-second map
 > (thesis, on-chain receipts, three layers, honest limits, how to verify).
 
+**See it work in one command:** `npm install && bash demo.sh` — the retention
+clock, 15 real leaves captured, the official Stellar codec syncing from the
+bootnode, a post-quantum attestation verified and a tampered one refused, and the
+live on-chain contracts. Every step real, nothing mocked.
+
 ![demo](docs/demo.gif)
 
 *The whole pipeline on real testnet data: the RPC's 7-day amnesia, 15 real ASP
