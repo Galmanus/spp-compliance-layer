@@ -15,3 +15,5 @@ docs/whitepaper/*.toc
 onchain-verifier/target/
 onchain-verifier/target/
 onchain-verifier/test_snapshots/
+
+guarded-pool/target/
