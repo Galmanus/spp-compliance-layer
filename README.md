@@ -38,8 +38,15 @@ history, with live receipts:
 | Valid proof admits the root | tx [`86933844…`](https://stellar.expert/explorer/testnet/tx/86933844145b5be2274f0df59c7af748ea4337893b35dd9869c5677ea2a4e636) → index `14`, emits `admitted` |
 | `is_attested(root)` after | `true` for the admitted root, `false` for any other |
 | Tampered proof | transaction **rejected on-chain** — no root admitted |
+| A pool consumes it | `spend` against the attested root succeeds ([`4a2a83ed…`](https://stellar.expert/explorer/testnet/tx/4a2a83ed6da42668630632ca9a4378bbe5a0a57d86733b2c1cb5928a504a1e23)); against an un-admitted root, **refused on-chain** |
 | Pure verify (first demo) | `true` [`96110dc1…`](https://stellar.expert/explorer/testnet/tx/96110dc19ea1ea63b888bbcd02fbb7c2c76a5d91ff03aa2ce14797e7f83e6718), tampered `false` [`ee36ca3d…`](https://stellar.expert/explorer/testnet/tx/ee36ca3dacb7e7b0c9dfa83afbcb07a5f5b775a27d9674678fa005e07eadea5f) |
 | Cost | 260M instructions (65% of one tx), 115 KB wasm, ~0.0385 XLM |
+
+The loop closes on both sides: a **post-quantum STARK** proves the history honest
+→ the **gate** admits the root on-chain only if that proof verifies → a **pool**
+consults the gate cross-contract before it will spend. No attestation, no
+admitted root; no admitted root, no spend — all on Stellar, with receipts
+([`guarded-pool/`](guarded-pool/), [`onchain-verifier/`](onchain-verifier/)).
 
 To our knowledge, the first transparent post-quantum proof verified on-chain on
 Stellar in a privacy-compliance context — and the first to *gate on-chain state*

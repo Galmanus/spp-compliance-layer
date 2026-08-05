@@ -52,6 +52,36 @@ This is the closed loop: a root is compliance-admitted on Stellar **only** if a
 hash-based post-quantum proof of the honest append-only history verifies in the
 same transaction.
 
+## The full loop: a pool consumes the gate
+
+The gate admits roots; a pool must actually *use* that verdict for the loop to
+close. `guarded-pool/` is a minimal pool that, before honouring a spend, asks the
+gate --- cross-contract --- whether the root is attested. If not, the spend is
+refused by the chain.
+
+```
+post-quantum attestation  ->  admit_root (gate verifies the STARK on-chain,
+   (STARK, off-chain proof)     admits the root)  ->  is_attested = true
+                                                          |
+                                                          v
+   guarded pool: spend(root, note)  --calls is_attested on the gate-->  allowed
+   spend against an un-admitted root  --------------------------------> refused
+```
+
+Receipts (testnet), pool `CAHZAPQPG77ZNX55XUBIWK3ZSEGH4XKCYF5KXUP4GTONPRTQ54LB47PE`
+wired to gate `CA2ZTJXJ…`:
+
+- **Spend against the attested root succeeds** →
+  tx `4a2a83ed6da42668630632ca9a4378bbe5a0a57d86733b2c1cb5928a504a1e23`,
+  emits `spent(root=42ee8f6f…)`, and `is_spent(note)` then reads `true`;
+- **Spend against a root the gate never admitted is refused** on-chain
+  (`root is not compliance-attested by the gate; spend refused`);
+- **Replaying a spent note is refused** (`note already spent`).
+
+So a real state-changing action on Stellar now depends, transitively, on a
+hash-based post-quantum proof: no attestation, no admitted root; no admitted
+root, no spend. That is the loop closed on both sides.
+
 ## What was verified
 
 The contract (`onchain-verifier/`) takes the postcard-encoded append-only-history
