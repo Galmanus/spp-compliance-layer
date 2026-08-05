@@ -298,6 +298,20 @@ with none of those properties: a hash-based Circle-STARK (from the
 \emph{append-only chain} --- indices $0,1,2,\dots$ with no gap, each root chained
 from the last, and the first and last roots pinned as public values.
 
+This attestation is not only checkable off-chain. It is verified \emph{on-chain},
+inside a Soroban contract, in a single Stellar transaction --- over the real
+15-leaf history. To our knowledge this is the first transparent
+(trusted-setup-free) post-quantum proof verified on-chain on Stellar in a
+privacy-compliance context; the claim is checkable, given the SDF's own statement
+that no drop-in post-quantum replacement for pairing SNARKs exists. On Stellar
+testnet the honest proof returns \code{true}
+(tx \code{96110dc1\dots}) and a tampered public root returns \code{false}
+(tx \code{ee36ca3d\dots}), at contract
+\code{CCWNNU4K3LWEPFRI7HLXV2WA2CV7C4Z7MFMWP7I7JZWESLTLPNHPCWRG}. It fits: the
+optimized wasm is 112\,KB (under Soroban's 128\,KB code limit), and at 40 FRI
+queries the verification costs 260M instructions --- 65\% of one transaction's
+CPU budget, measured on the metered host, not estimated.
+
 What the STARK proves is the \emph{shape} of the history, not the hash inside it.
 The BN254-Poseidon2 compression that produces each root is treated as a witnessed
 label, not re-derived inside the Mersenne-31 field the STARK runs over (that would
@@ -366,6 +380,16 @@ smaller than the one first written, we fixed it, and we turned the dial up to th
 strongest setting this construction allows. 62 quantum bits is real but below the
 128-bit comfort level --- so we say ``post-quantum in construction, demonstrated
 at the field's ceiling'', not ``quantum-proof forever''.}
+
+On-chain, a Soroban transaction's CPU cap bounds the query count below the
+off-chain optimum. At the 40 queries that verify in one transaction, the
+on-chain security is 48 classical / 24 quantum bits. So the strong 62-quantum-bit
+attestation runs off-chain for a regulator, and the on-chain contract is a live
+demonstration that transparent post-quantum verification runs on Stellar today,
+at a stated and lower security level. Reaching 62 quantum bits on-chain would
+require splitting the verification across transactions or a larger extension
+field; neither is claimed as done, and the on-chain figure is not presented as
+production-grade.
 
 \subsection{Other stated limits}
 
