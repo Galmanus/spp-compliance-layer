@@ -352,15 +352,23 @@ What the STARK proves is the \emph{shape} of the history, not the hash inside it
 The BN254-Poseidon2 compression that produces each root is treated as a witnessed
 label, not re-derived inside the Mersenne-31 field the STARK runs over (that would
 be reproving a pairing-field hash in a prime field --- out of scope, and stated
-so). The security property is therefore precise: a reordered or leaf-injected
-history is \emph{unprovable} --- not merely rejected at verification, but
-impossible to produce a valid proof for.
+so). The security property is therefore precise, and narrower than ``chain''
+would suggest: the AIR proves the \emph{index structure} --- consecutive gap-free
+indices with the endpoints pinned to public values --- but it does not chain the
+roots or anchor the endpoints, so the guarantee holds against endpoints a verifier
+knows independently, not against a prover who chooses them. A fabricated sequence
+of the same shape also verifies; the completeness binding is Layer~2's coverage
+proof. This is stated precisely in \code{docs/LAYER3-DESIGN.md} and pinned by a
+test, so ``append-only'' is not allowed to overclaim.
 
-\intuition{Think of it as a tamper-evident notary stamp on the list of ``approved
-members'' updates. It does not re-examine each stamp's ink; it proves the list is
-in honest order with nothing inserted or swapped --- with mathematics a quantum
-computer cannot forge, and with no secret setup that could leak and break it. A
-regulator in 2035 can check it without trusting anyone.}
+\intuition{Think of it as a tamper-evident stamp on the \emph{ordering and count}
+of the ``approved members'' updates: it proves the indices run $0,1,2,\dots$ with
+none dropped from the count and none out of order, between two endpoints someone
+who knows the real ones can check --- with mathematics a quantum computer cannot
+forge, and no secret setup that could leak and break it. What it does not do is
+vouch that the roots themselves are the real ones; that is the coverage proof's
+job. A regulator in 2035 checks the ordering here and the completeness there,
+trusting neither us nor a single provider.}
 
 % ---------------- 5 ----------------
 \section{Security analysis, stated honestly}
