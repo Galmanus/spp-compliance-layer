@@ -73,7 +73,9 @@ reproduction: **[docs/ONCHAIN-VERIFICATION.md](docs/ONCHAIN-VERIFICATION.md)**.
 > wallets on primitives that describe themselves as unaudited works in progress.
 > This is the layer that lets those wallets be trusted: it audits the
 > primitives, remembers the history they forget, and proves that history honest
-> in a way a quantum computer cannot undo.
+> in a way a quantum computer cannot undo. **It does not compete with the lane's
+> wallets — it is what they depend on**; each can point its `bootnode_url` here
+> and gate compliance on the same post-quantum attestation.
 >
 > **It is not adjacent to the SPP stack — it completes a component of it.**
 > Nethermind's client hands sync off to a `bootnode_url` on the retention gap
