@@ -23,7 +23,9 @@ reference bootnode's own docs say it lacks.**
 [![license](https://img.shields.io/badge/license-MIT-blue)](#license)
 
 > **Judges start here:** [`SUBMISSION.md`](SUBMISSION.md) — the 60-second map
-> (thesis, on-chain receipts, three layers, honest limits, how to verify).
+> (thesis, on-chain receipts, three layers, honest limits, how to verify). Skeptical?
+> **[VERIFY-IT-YOURSELF.md](VERIFY-IT-YOURSELF.md)** — confirm every claim through the
+> public chain, the official SDK, and Nethermind's repo, in ~5 minutes.
 
 **See it work in one command:** `npm install && bash demo.sh` — the retention
 clock, 15 real leaves captured, the official Stellar codec syncing from the
@@ -41,8 +43,9 @@ reproduce with `bash scripts/demo-record.sh`.*
 
 The Layer-3 attestation does not only verify off-chain, and it is not a parallel
 decoration. A **hash-based, trusted-setup-free, post-quantum Circle-STARK** that
-a privacy pool's compliance root history is an honest append-only chain is
-**verified inside a Soroban contract, in a single Stellar transaction**, and made
+a privacy pool's compliance root history is a gap-free append-only sequence (by
+index; [roots witnessed](docs/LAYER3-DESIGN.md)) is **verified inside a Soroban
+contract, in a single Stellar transaction**, and made
 **load-bearing**: a root is admitted as compliance-valid on-chain *only* if the
 post-quantum proof verifies in the same transaction. Over the *real* 15-leaf
 history, with live receipts:
