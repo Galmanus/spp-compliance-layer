@@ -6,3 +6,9 @@ data/
 .env
 # Rust build output, not the source
 attestation/target/
+
+# LaTeX build intermediates
+docs/whitepaper/*.aux
+docs/whitepaper/*.log
+docs/whitepaper/*.out
+docs/whitepaper/*.toc
