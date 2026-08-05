@@ -1,0 +1,33 @@
+[package]
+name = "spp-onchain-verifier"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { version = "26", features = ["alloc"] }
+# Same pinned rev as attestation/, so the SAME proof our attest-asp-history
+# binary produces is what this contract verifies on-chain. soroban-host-keccak
+# routes the STARK's keccak to Soroban's native host function (cheap, metered as
+# one host call, not thousands of wasm instructions).
+riverrun-m31 = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb", default-features = false, features = ["wire-postcard", "soroban-host-keccak"] }
+
+[dev-dependencies]
+soroban-sdk = { version = "26", features = ["alloc", "testutils"] }
+# The prover side runs on std with software keccak; Fiat-Shamir enforces that the
+# host-keccak verifier accepts it (same transcript, same function).
+riverrun-m31 = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb", default-features = false, features = ["wire-postcard"] }
+
+[patch.crates-io]
+p3-uni-stark = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb" }
+p3-circle = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+overflow-checks = true

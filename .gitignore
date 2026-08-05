@@ -12,3 +12,6 @@ docs/whitepaper/*.aux
 docs/whitepaper/*.log
 docs/whitepaper/*.out
 docs/whitepaper/*.toc
+onchain-verifier/target/
+onchain-verifier/target/
+onchain-verifier/test_snapshots/

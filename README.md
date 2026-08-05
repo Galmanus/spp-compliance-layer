@@ -14,12 +14,39 @@ their client already reaches for, made trust-minimized: it serves the history
 the RPC forgets with a completeness proof and a post-quantum attestation the
 reference bootnode's own docs say it lacks.**
 
+[![on-chain PQ](https://img.shields.io/badge/post--quantum%20STARK-verified%20on--chain%20on%20Stellar-6a1b9a)](#a-first-on-stellar--a-post-quantum-proof-verified-on-chain)
 [![tests](https://img.shields.io/badge/tests-22%20JS%20%2B%203%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
 [![node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#run-it-yourself-in-five-minutes)
 [![post-quantum](https://img.shields.io/badge/attestation-hash--based%2C%20no%20trusted%20setup-8A2BE2)](#layer-3--post-quantum-attestation-of-asp-root-history)
 [![retention](https://img.shields.io/badge/RPC%20window-7.02%20days%2C%20measured-1f6feb)](#layer-2--the-durable-index)
 [![lane](https://img.shields.io/badge/lane-Privacy%20%C2%B7%20OpenZeppelin%20%2B%20Nethermind-orange)](https://github.com/NethermindEth/stellar-private-payments)
 [![license](https://img.shields.io/badge/license-MIT-blue)](#license)
+
+## A first on Stellar — a post-quantum proof verified on-chain
+
+The Layer-3 attestation does not only verify off-chain. A **hash-based,
+trusted-setup-free, post-quantum Circle-STARK** that a privacy pool's compliance
+root history is an honest append-only chain is **verified inside a Soroban
+contract, in a single Stellar transaction** — over the *real* 15-leaf history,
+with live receipts:
+
+| | on Stellar testnet |
+|:--|:--|
+| Contract | `CCWNNU4K3LWEPFRI7HLXV2WA2CV7C4Z7MFMWP7I7JZWESLTLPNHPCWRG` |
+| Honest proof → `true` | tx [`96110dc1…`](https://stellar.expert/explorer/testnet/tx/96110dc19ea1ea63b888bbcd02fbb7c2c76a5d91ff03aa2ce14797e7f83e6718) |
+| Tampered root → `false` | tx [`ee36ca3d…`](https://stellar.expert/explorer/testnet/tx/ee36ca3dacb7e7b0c9dfa83afbcb07a5f5b775a27d9674678fa005e07eadea5f) |
+| Cost | 260M instructions (65% of one tx), 112 KB wasm, ~0.0385 XLM |
+
+To our knowledge, the first transparent post-quantum proof verified on-chain on
+Stellar in a privacy-compliance context — a checkable claim, given the SDF's own
+statement that no drop-in post-quantum replacement for pairing SNARKs exists, and
+that Stellar's privacy stack (SPP Groth16, OZ UltraHonk) is entirely BN254. On
+chain the security is 48 classical / **24 quantum** bits at 40 queries (one
+transaction); the stronger 62-quantum-bit version runs off-chain. Both figures
+are stated, neither is hidden. Full detail and reproduction:
+**[docs/ONCHAIN-VERIFICATION.md](docs/ONCHAIN-VERIFICATION.md)**.
+
+---
 
 > Submitted to the **Confidential-Token & Private-Payment Wallets** sub-lane,
 > under the brief's *ecosystem infrastructure* heading. Twenty teams will build
