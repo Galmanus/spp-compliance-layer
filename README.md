@@ -15,7 +15,7 @@ the RPC forgets with a completeness proof and a post-quantum attestation the
 reference bootnode's own docs say it lacks.**
 
 [![on-chain PQ](https://img.shields.io/badge/post--quantum%20STARK-verified%20on--chain%20on%20Stellar-6a1b9a)](#a-first-on-stellar--a-post-quantum-proof-verified-on-chain)
-[![tests](https://img.shields.io/badge/tests-31%20JS%20%2B%207%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
+[![tests](https://img.shields.io/badge/tests-31%20JS%20%2B%2015%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
 [![node](https://img.shields.io/badge/Node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#run-it-yourself-in-five-minutes)
 [![post-quantum](https://img.shields.io/badge/attestation-hash--based%2C%20no%20trusted%20setup-8A2BE2)](#layer-3--post-quantum-attestation-of-asp-root-history)
 [![retention](https://img.shields.io/badge/RPC%20window-7.02%20days%2C%20measured-1f6feb)](#layer-2--the-durable-index)
