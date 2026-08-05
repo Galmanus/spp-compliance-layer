@@ -82,5 +82,6 @@ cd ../onchain-verifier && cargo test --release --test measure -- --nocapture
 - **On-chain verification + receipts:** [`docs/ONCHAIN-VERIFICATION.md`](docs/ONCHAIN-VERIFICATION.md)
 - **Verifiable bootnode (attack-vector map):** [`docs/VERIFIABLE-BOOTNODE.md`](docs/VERIFIABLE-BOOTNODE.md)
 - **Related work + the precise claim:** [`docs/RELATED-WORK.md`](docs/RELATED-WORK.md)
+- **References + cryptographic grounding:** [`docs/REFERENCES.md`](docs/REFERENCES.md)
 - **Evidence (every number, reproduced):** [`docs/EVIDENCE.md`](docs/EVIDENCE.md)
 - **Security accounting:** [`docs/SECURITY.md`](docs/SECURITY.md)

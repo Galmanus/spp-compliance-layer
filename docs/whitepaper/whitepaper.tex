@@ -173,6 +173,17 @@ The wallet's dependency on history is therefore twofold. It needs the pool's
 commitment stream to find its notes, and it needs the ASP root history to build
 compliance proofs. Both are RPC events. Both expire.
 
+This ASP mechanism is exactly Privacy Pools (Buterin, Illum, Nadler, Schär,
+Soleimani, 2023): a user proves membership in an association-set root rather than
+naming a specific deposit, creating a separating equilibrium between compliant
+and non-compliant withdrawals. The canonical formalization names the precise risk
+this project addresses --- \emph{``Set-provider integrity: a malicious or
+compromised provider can include or exclude specific deposits, effectively
+censoring users or diluting the compliance signal''} --- and our completeness
+proof plus post-quantum attestation are a direct mitigation of it, moving the
+guarantee from ``trust the provider'' to ``check one proof''. Primary sources are
+collected in the repository's \code{docs/REFERENCES.md}.
+
 \intuition{There are two logbooks the wallet must read from page one: one listing
 every sealed envelope (the pool), and one listing every update to the ``approved
 members'' stamp (the ASP). The post office discards old pages of both.}

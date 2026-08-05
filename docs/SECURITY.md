@@ -53,6 +53,29 @@ target: the attestation is post-quantum in construction (hash-based, no trusted
 setup) but this parameterisation is a demonstration at the field ceiling, not a
 system to place real value behind — stated here rather than left implied.
 
+## The soundness regime, and a late-2025 development
+
+The figures above are **proximity-gap-assumption** figures, in the sense every
+FRI-based STARK reports. FRI soundness reduces to Reed–Solomon proximity gaps
+(Ben-Sasson–Carmon–Ishai–Kopparty–Saraf, *Proximity Gaps for Reed-Solomon
+Codes*, ePrint [2020/654](https://eprint.iacr.org/2020/654)). There are two
+regimes and we do not blur them:
+
+- **proven, up to the Johnson bound** — unconditional, more conservative (fewer
+  bits per query);
+- **conjectured, up to list-decoding capacity** — more bits per query, but an
+  assumption, and in **November 2025 its strongest form was disproven**
+  (Crites–Stewart, ePrint [2025/2046](https://eprint.iacr.org/2025/2046);
+  improved proven bounds and a ~2x-query above-Johnson result followed in
+  [2025/2055](https://eprint.iacr.org/2025/2055) and 2026/858).
+
+Under the conservative proven regime the bit count is lower, and the honest
+remedy is simply more queries — which is why the query count is a single exposed
+parameter (`attestation/src/lib.rs`). Production STARK systems (Starknet's Cairo,
+Plonky3 rollups) make the same class of assumption today; we state ours and note
+the 2025 developments a reviewer will know. Full grounding in
+[`REFERENCES.md`](REFERENCES.md).
+
 ## What is assumed, not proven
 
 1. **The root is a witnessed label, not a reproven hash.** The ASP hashes with
