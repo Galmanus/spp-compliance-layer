@@ -107,3 +107,4 @@ cd ../onchain-verifier && cargo test --release --test measure -- --nocapture
 - **Composition with agentic payments (x402/MPP):** [`docs/AGENTIC-PAYMENTS.md`](docs/AGENTIC-PAYMENTS.md)
 - **Evidence (every number, reproduced):** [`docs/EVIDENCE.md`](docs/EVIDENCE.md)
 - **Security accounting:** [`docs/SECURITY.md`](docs/SECURITY.md)
+- **Verify it yourself (public chain, official SDK, their repo):** [`VERIFY-IT-YOURSELF.md`](VERIFY-IT-YOURSELF.md)
