@@ -70,22 +70,29 @@ fn decimal_to_be32(dec: &str) -> [u8; 32] {
         }
         le.push(carry as u8);
     }
+    // A BN254 root is < 2^254, so it fits in 32 bytes. A value that does not is not
+    // a valid field element; reject it rather than silently truncate, which would
+    // break the injective-label invariant `parse_root` relies on.
+    assert!(le.len() <= 32, "root value exceeds 256 bits; not a valid field element");
     let mut be = [0u8; 32];
-    for (i, b) in le.iter().take(32).enumerate() {
+    for (i, b) in le.iter().enumerate() {
         be[31 - i] = *b;
     }
     be
 }
 
 /// A hex string to 32 big-endian bytes, right-aligned (low bytes preserved).
+/// Works on ASCII bytes (non-hex bytes are dropped), so a non-ASCII input cannot
+/// panic on a char-boundary slice.
 fn hex_to_be32(h: &str) -> [u8; 32] {
-    let padded = if h.len() % 2 == 1 { format!("0{h}") } else { h.to_string() };
-    let bytes: Vec<u8> = (0..padded.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&padded[i..i + 2], 16).unwrap_or(0))
-        .collect();
+    let nibble = |b: u8| (b as char).to_digit(16).unwrap_or(0) as u8;
+    let mut nibbles: Vec<u8> = h.bytes().filter(u8::is_ascii_hexdigit).collect();
+    if nibbles.len() % 2 == 1 {
+        nibbles.insert(0, b'0'); // left-pad to a whole byte
+    }
+    let bytes: Vec<u8> = nibbles.chunks(2).map(|c| (nibble(c[0]) << 4) | nibble(c[1])).collect();
+    assert!(bytes.len() <= 32, "root value exceeds 256 bits; not a valid field element");
     let mut be = [0u8; 32];
-    // keep the LOW 32 bytes (right-aligned), the canonical field-element form.
     let take = bytes.len().min(32);
     be[32 - take..].copy_from_slice(&bytes[bytes.len() - take..]);
     be

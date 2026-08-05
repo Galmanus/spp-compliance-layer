@@ -40,6 +40,12 @@ const EVENT_ADMITTED: Symbol = symbol_short!("admitted");
 /// (`admit_root`) is what enforces this.
 const MIN_QUERIES: u32 = 40;
 
+// Persistent-entry TTL management. Soroban archives a persistent entry once its
+// TTL lapses; the attestation record must not silently expire, so it is bumped on
+// admit and on read. ~30 days of extension, refreshed when it drops below ~1 day.
+const TTL_THRESHOLD: u32 = 17_280; // ~1 day at 5s/ledger
+const TTL_EXTEND: u32 = 518_400; // ~30 days
+
 /// Persistent storage key: an admitted root, keyed by the keccak256 of its
 /// canonical little-endian limbs.
 #[contracttype]
@@ -146,19 +152,38 @@ impl AspHistoryVerifier {
         if !check(&d, &p, real_rows, num_queries) {
             panic!("post-quantum attestation did not verify: root not admitted");
         }
-        // real_rows real leaves means the last index is real_rows - 1, counting
-        // from start_index.
-        let admitted_index = d.start_index + real_rows as u64 - 1;
+        // We store the proof-BOUND start_index, not `start_index + real_rows - 1`.
+        // `real_rows` is passed to the verifier to build the AIR, but the AIR does
+        // not constrain it (it is not a public value the proof pins), so it is a
+        // caller assertion, not proven — deriving stored state from it would let a
+        // caller record a forged history length. The history's tip index is
+        // therefore NOT stored as fact here; binding it would be an AIR change in
+        // riverrun-m31. The security-critical output — that this exact last_root
+        // is admitted — is sound: last_root IS a pinned public value.
+        let admitted = d.start_index;
         let key = root_key(&env, &d.last_root);
-        env.storage().persistent().set(&Key::Root(key.clone()), &admitted_index);
-        env.events().publish((EVENT_ADMITTED, key), admitted_index);
-        admitted_index
+        env.storage().persistent().set(&Key::Root(key.clone()), &admitted);
+        // Keep the attestation record from silently expiring (persistent entries
+        // are archived once their TTL lapses; without this a root could de-attest
+        // and legitimate spends begin to fail).
+        env.storage()
+            .persistent()
+            .extend_ttl(&Key::Root(key.clone()), TTL_THRESHOLD, TTL_EXTEND);
+        env.events().publish((EVENT_ADMITTED, key), admitted);
+        admitted
     }
 
     /// Whether a root (identified by the keccak256 of its LE limbs) has been
     /// admitted by a valid post-quantum attestation. A pool or wallet checks
     /// this before honouring a membership proof against that root.
     pub fn is_attested(env: Env, root_key: BytesN<32>) -> bool {
-        env.storage().persistent().has(&Key::Root(root_key))
+        let key = Key::Root(root_key);
+        let present = env.storage().persistent().has(&key);
+        // Keep an actively-consulted root alive: reading it bumps its TTL, so a
+        // root that is still in use does not age out from under the pool.
+        if present {
+            env.storage().persistent().extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND);
+        }
+        present
     }
 }

@@ -40,10 +40,10 @@ fn parse_limbs(hex: &str) -> [u64; ROOT_LIMBS] {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 6 {
+    if args.len() < 6 || args.len() > 7 {
         eprintln!(
             "usage: verify-asp-history <attestation.postcard> <start_index> \
-             <first_root_limbs> <last_root_limbs> <events>"
+             <first_root_limbs> <last_root_limbs> <events> [num_queries]"
         );
         std::process::exit(2);
     }
@@ -54,8 +54,15 @@ fn main() {
     let first_root = parse_limbs(&args[3]);
     let last_root = parse_limbs(&args[4]);
     let events: usize = args[5].parse().expect("events");
+    // The query count MUST match the one the proof was produced with, or a valid
+    // proof fails verification. Defaults to the shipped off-chain level; pass the
+    // on-chain count (e.g. 40) to check a proof made for the gate.
+    let num_queries: usize = args
+        .get(6)
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(spp_attestation::NUM_QUERIES);
 
-    let ok = verify_asp_history(&proof, start_index, first_root, last_root, events, spp_attestation::NUM_QUERIES);
+    let ok = verify_asp_history(&proof, start_index, first_root, last_root, events, num_queries);
 
     if ok {
         println!(
