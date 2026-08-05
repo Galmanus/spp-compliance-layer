@@ -32,10 +32,10 @@ is admitted. A pool or wallet checks `is_attested(root)` before honouring a
 membership proof against that root.
 
 Receipts (Stellar testnet), gated contract
-`CA2ZTJXJAXA42M5HYD7YVQNYLCYS2FVQSSQ2MMERC5ODHSK6D7OWZMUY`:
+`CBY2N5KH26SS6O23FNZ3XICWIKAAQO7LVEDAOZ6HZ5GD6U52UDMV5WXW`:
 
 - **Valid proof admits the real root** →
-  tx `86933844145b5be2274f0df59c7af748ea4337893b35dd9869c5677ea2a4e636`,
+  tx `fa5865c3b740fc895957a1cf129ea9cf0763e7a706ed294546501ef1aff5c7ed`,
   returns index `14`, emits
   `admitted(root=42ee8f6f…) = 14`;
 - `is_attested(42ee8f6f…)` → **`true`** (the admitted root);
@@ -43,6 +43,16 @@ Receipts (Stellar testnet), gated contract
 - **Tampered proof is rejected on-chain** → the `admit_root` transaction traps
   (`post-quantum attestation did not verify: root not admitted`), changing no
   state.
+- **A proof below the security floor is rejected** → `admit_root` enforces a
+  minimum of 40 FRI queries (`MIN_QUERIES`). A self-audit found that, without
+  this floor, an attacker could grind a cheap low-query proof (e.g. 1 query ~9
+  bits) of a *forged* history and have it admitted. With the floor, an
+  `admit_root` at 8 queries traps on-chain
+  (`num_queries below the on-chain security floor`), even though that proof would
+  "verify" at its own weak query count. The floor is enforced *before*
+  verification, so a weak proof cannot admit a root regardless. (`verify` is the
+  raw primitive and is intentionally unfloored, to measure any query count; the
+  gate is what enforces the floor.)
 
 `admit_root` (verify + storage write + event) costs 260,595,609 instructions at
 40 queries --- 65.1% of one transaction's budget, essentially the verification
@@ -68,11 +78,11 @@ post-quantum attestation  ->  admit_root (gate verifies the STARK on-chain,
    spend against an un-admitted root  --------------------------------> refused
 ```
 
-Receipts (testnet), pool `CAHZAPQPG77ZNX55XUBIWK3ZSEGH4XKCYF5KXUP4GTONPRTQ54LB47PE`
-wired to gate `CA2ZTJXJ…`:
+Receipts (testnet), pool `CBO4RLRKYJ5442P6P4ZFUZSENBCFOGBSJW2Y34YQQRMUASVFVG7R6WYF`
+wired to gate `CBY2N5KH…`:
 
 - **Spend against the attested root succeeds** →
-  tx `4a2a83ed6da42668630632ca9a4378bbe5a0a57d86733b2c1cb5928a504a1e23`,
+  tx `6005bd172de821b01db73f97ca2375b6d2804355ef91895efeb04b16cd844b92`,
   emits `spent(root=42ee8f6f…)`, and `is_spent(note)` then reads `true`;
 - **Spend against a root the gate never admitted is refused** on-chain
   (`root is not compliance-attested by the gate; spend refused`);

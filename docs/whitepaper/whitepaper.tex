@@ -327,8 +327,8 @@ Stellar (Groth16, UltraHonk, RISC-Zero-to-Groth16) is BN254, which a quantum
 computer breaks; the SDF itself states there is no drop-in post-quantum
 replacement for pairing SNARKs. Prior work and the precise claim are set out in
 the repository's \code{docs/RELATED-WORK.md}. On Stellar testnet, at the gated contract
-\code{CA2ZTJXJAXA42M5HYD7YVQNYLCYS2FVQSSQ2MMERC5ODHSK6D7OWZMUY}, a valid proof
-admits the real root (tx \code{86933844\dots}, returning index 14 and emitting
+\code{CBY2N5KH26SS6O23FNZ3XICWIKAAQO7LVEDAOZ6HZ5GD6U52UDMV5WXW}, a valid proof
+admits the real root (tx \code{fa5865c3\dots}, returning index 14 and emitting
 \code{admitted}), \code{is\_attested} then reads \code{true} for that root and
 \code{false} for any other, and a tampered proof's transaction is rejected. It
 fits: the optimized wasm is 115\,KB (under Soroban's 128\,KB code limit), and at

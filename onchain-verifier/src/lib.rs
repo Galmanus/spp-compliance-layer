@@ -31,6 +31,15 @@ const PUBLICS_BYTES: u32 = (PUBLICS_U64S * 8) as u32;
 
 const EVENT_ADMITTED: Symbol = symbol_short!("admitted");
 
+/// The on-chain security floor, in FRI queries. A proof is only as sound as the
+/// query count it was produced with; without a floor, an attacker could grind a
+/// cheap low-query proof (e.g. 1 query ~ 9 bits including proof-of-work) of a
+/// forged history and have `admit_root` accept it. 40 queries is ~48 classical
+/// bits (2^48 grinding, infeasible), the shipped on-chain level. `verify` is the
+/// raw primitive and does NOT floor (it exists to measure any point); the gate
+/// (`admit_root`) is what enforces this.
+const MIN_QUERIES: u32 = 40;
+
 /// Persistent storage key: an admitted root, keyed by the keccak256 of its
 /// canonical little-endian limbs.
 #[contracttype]
@@ -123,6 +132,15 @@ impl AspHistoryVerifier {
         real_rows: u32,
         num_queries: u32,
     ) -> u64 {
+        // Enforce the security floor: a proof below it is cheap to forge, so it
+        // must not be able to admit a root regardless of whether it "verifies" at
+        // its own weak query count.
+        if num_queries < MIN_QUERIES {
+            panic!("num_queries below the on-chain security floor; root not admitted");
+        }
+        if real_rows == 0 {
+            panic!("an empty history admits nothing");
+        }
         let d = decode_publics(&publics).expect("malformed public values");
         let p = decode_proof(&proof).expect("malformed proof");
         if !check(&d, &p, real_rows, num_queries) {

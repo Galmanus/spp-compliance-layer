@@ -44,11 +44,11 @@ history, with live receipts:
 
 | | on Stellar testnet |
 |:--|:--|
-| Gated contract | `CA2ZTJXJAXA42M5HYD7YVQNYLCYS2FVQSSQ2MMERC5ODHSK6D7OWZMUY` |
-| Valid proof admits the root | tx [`86933844…`](https://stellar.expert/explorer/testnet/tx/86933844145b5be2274f0df59c7af748ea4337893b35dd9869c5677ea2a4e636) → index `14`, emits `admitted` |
+| Gated contract | `CBY2N5KH26SS6O23FNZ3XICWIKAAQO7LVEDAOZ6HZ5GD6U52UDMV5WXW` |
+| Valid proof admits the root | tx [`fa5865c3…`](https://stellar.expert/explorer/testnet/tx/fa5865c3b740fc895957a1cf129ea9cf0763e7a706ed294546501ef1aff5c7ed) → index `14`, emits `admitted` |
 | `is_attested(root)` after | `true` for the admitted root, `false` for any other |
 | Tampered proof | transaction **rejected on-chain** — no root admitted |
-| A pool consumes it | `spend` against the attested root succeeds ([`4a2a83ed…`](https://stellar.expert/explorer/testnet/tx/4a2a83ed6da42668630632ca9a4378bbe5a0a57d86733b2c1cb5928a504a1e23)); against an un-admitted root, **refused on-chain** |
+| A pool consumes it | `spend` against the attested root succeeds ([`6005bd17…`](https://stellar.expert/explorer/testnet/tx/6005bd172de821b01db73f97ca2375b6d2804355ef91895efeb04b16cd844b92)); against an un-admitted root, **refused on-chain** |
 | Pure verify (first demo) | `true` [`96110dc1…`](https://stellar.expert/explorer/testnet/tx/96110dc19ea1ea63b888bbcd02fbb7c2c76a5d91ff03aa2ce14797e7f83e6718), tampered `false` [`ee36ca3d…`](https://stellar.expert/explorer/testnet/tx/ee36ca3dacb7e7b0c9dfa83afbcb07a5f5b775a27d9674678fa005e07eadea5f) |
 | Cost | 260M instructions (65% of one tx), 115 KB wasm, ~0.0385 XLM |
 

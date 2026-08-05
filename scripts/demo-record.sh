@@ -57,9 +57,9 @@ gap 1.2
 
 beat "5 · and the same proof runs on-chain, gating real state on Stellar."
 gap 0.3
-out "  ${OK}gate${N}   admits a root only if the proof holds     ${D}tx 86933844…${N}"
+out "  ${OK}gate${N}   admits a root only if the proof holds     ${D}tx fa5865c3…${N}"
 sleep 0.5
-out "  ${OK}pool${N}   spends only against an admitted root       ${D}tx 4a2a83ed…${N}"
+out "  ${OK}pool${N}   spends only against an admitted root       ${D}tx 6005bd17…${N}"
 sleep 0.5
 out "  ${NO}✗${N}      tampered proof / un-admitted root         ${D}refused on-chain${N}"
 gap 1.2
