@@ -57,6 +57,17 @@ root; no admitted root, no spend.
    with recursion — the sponsor's own STARKPack technique — as the stated scaling
    path to lift the on-chain figure.
 
+## Alignment with the SDF's current priorities
+
+- **Post-quantum:** a transparent, hash-based STARK verified natively on-chain —
+  the ZK layer the SDF's Quantum Preparedness Plan names as the open problem.
+- **Privacy:** the compliance layer for Nethermind's SPP and OpenZeppelin's
+  Confidential Token, grounded in Privacy Pools (Buterin et al).
+- **Agentic payments:** the gate composes with Stellar's agent payment rails
+  (x402 / MPP) as a post-quantum compliance precondition — an agent settles a
+  private payment only if `is_attested(root)` holds. Stated as composition, not a
+  shipped agent demo. See [`docs/AGENTIC-PAYMENTS.md`](docs/AGENTIC-PAYMENTS.md).
+
 ## What we do NOT claim (stated first, not hidden)
 
 - **Not first at on-chain ZK on Stellar** (that is common, all BN254). The narrow
@@ -93,5 +104,6 @@ cd ../onchain-verifier && cargo test --release --test measure -- --nocapture
 - **Related work + the precise claim:** [`docs/RELATED-WORK.md`](docs/RELATED-WORK.md)
 - **References + cryptographic grounding:** [`docs/REFERENCES.md`](docs/REFERENCES.md)
 - **Threat model (Privacy Pools risks → coverage):** [`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md)
+- **Composition with agentic payments (x402/MPP):** [`docs/AGENTIC-PAYMENTS.md`](docs/AGENTIC-PAYMENTS.md)
 - **Evidence (every number, reproduced):** [`docs/EVIDENCE.md`](docs/EVIDENCE.md)
 - **Security accounting:** [`docs/SECURITY.md`](docs/SECURITY.md)
