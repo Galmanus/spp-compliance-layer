@@ -22,6 +22,9 @@ reference bootnode's own docs say it lacks.**
 [![lane](https://img.shields.io/badge/lane-Privacy%20%C2%B7%20OpenZeppelin%20%2B%20Nethermind-orange)](https://github.com/NethermindEth/stellar-private-payments)
 [![license](https://img.shields.io/badge/license-MIT-blue)](#license)
 
+> **Judges start here:** [`SUBMISSION.md`](SUBMISSION.md) — the 60-second map
+> (thesis, on-chain receipts, three layers, honest limits, how to verify).
+
 ## A first on Stellar — a post-quantum proof that gates on-chain state
 
 The Layer-3 attestation does not only verify off-chain, and it is not a parallel
