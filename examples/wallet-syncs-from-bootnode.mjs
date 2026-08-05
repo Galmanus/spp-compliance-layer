@@ -20,13 +20,9 @@ import { dispatch, CUTOFF_LEDGERS } from "../lib/bootnode.mjs";
 
 const require = createRequire(import.meta.url);
 let base = null;
-for (const p of [
-  "@stellar/stellar-base",
-  "/home/galmanus/ramp-kit/node_modules/@stellar/stellar-base",
-]) {
-  try { base = require(p); break; } catch { /* try next */ }
-}
-if (!base) {
+try {
+  base = require("@stellar/stellar-base");
+} catch {
   console.error("This demo needs the official codec: npm i @stellar/stellar-base");
   process.exit(2);
 }
