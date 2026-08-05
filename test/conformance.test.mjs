@@ -38,7 +38,7 @@ const GENESIS = 3_000_000;
 function seeded() {
   const s = openStore(":memory:");
   s.registerPool(POOL, GENESIS, "ASP membership");
-  s.ingestBatch(POOL, { fromLedger: GENESIS, toLedger: GENESIS + 30 });
+  s.ingestBatch(POOL, { fromLedger: GENESIS, toLedger: TIP });
   s.ingestAspRoot(POOL, { leaf: "11", leafIndex: 0, root: "9667", ledger: GENESIS + 10, eventId: "a" });
   s.ingestAspRoot(POOL, { leaf: "22", leafIndex: 1, root: "1185", ledger: GENESIS + 20, eventId: "b" });
   s.ingestAspRoot(POOL, { leaf: "33", leafIndex: 2, root: "2719", ledger: GENESIS + 30, eventId: "c" });

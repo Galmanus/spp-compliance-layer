@@ -48,3 +48,28 @@ test("a hex-tagged u256 folds to the same decimal as its plain form", () => {
   assert.equal(asHex, "255");
   assert.equal(asHex, asDec);
 });
+
+// NewCommitmentEvent(commitment: #[topic] U256, index: u32, encrypted_output:
+// Bytes) — pool.rs:193. index and encrypted_output live in the value MAP; a bug
+// read them as plain object properties (value.index) and silently nulled every
+// leafIndex and ciphertext, which would break a wallet's note discovery. This
+// pins the map-field decode.
+test("a NewCommitmentEvent decodes its index and ciphertext from the value map", () => {
+  const ev = {
+    id: "c1",
+    ledger: 42,
+    contractId: "CPOOL",
+    topicJson: [{ symbol: "NewCommitmentEvent" }, { u256: "12345" }],
+    valueJson: {
+      map: [
+        { key: { symbol: "index" }, val: { u32: 7 } },
+        { key: { symbol: "encrypted_output" }, val: { bytes: "deadbeef" } },
+      ],
+    },
+  };
+  const d = decodeEvent(ev);
+  assert.equal(d.kind, "commitment");
+  assert.equal(d.commitment, "12345");
+  assert.equal(d.leafIndex, 7, "leafIndex must come from the map, not null");
+  assert.equal(d.encryptedOutput, "deadbeef", "ciphertext must come from the map, not null");
+});

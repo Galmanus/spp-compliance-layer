@@ -34,21 +34,61 @@
 use riverrun_m31::asp_history::{prove_asp_history, root_to_limbs, RootStep, ROOT_LIMBS};
 use std::fs;
 
-/// Parse a BN254 root hex string into the tag limbs the AIR carries. The AIR
-/// does no arithmetic on the root — it is a witnessed label — so this only has
-/// to be injective on distinct roots, which `root_to_limbs` guarantees.
-fn parse_root_hex(h: &str) -> [u64; ROOT_LIMBS] {
-    let h = h.trim_start_matches("0x");
-    // Left-pad to even length so odd-length hex (e.g. "0x1") parses.
-    let padded = if h.len() % 2 == 1 { format!("0{h}") } else { h.to_string() };
+/// Parse a BN254 root into the tag limbs the AIR carries. The AIR does no
+/// arithmetic on the root — it is a witnessed label — so this only has to be
+/// injective on distinct roots, which `root_to_limbs` over the canonical 32-byte
+/// big-endian form guarantees.
+///
+/// The index emits roots as DECIMAL strings (U256 canonicalized in
+/// `lib/decode.mjs`), so decimal is the primary path; a `0x`-prefixed hex string
+/// is also accepted for robustness. An earlier version parsed the decimal string
+/// AS hex and truncated 38→32 bytes, which was not injective on full-width BN254
+/// roots — corrected here to a faithful decimal→bytes conversion.
+fn parse_root(s: &str) -> [u64; ROOT_LIMBS] {
+    let s = s.trim();
+    let be = match s.strip_prefix("0x") {
+        Some(hex) => hex_to_be32(hex),
+        None => decimal_to_be32(s),
+    };
+    root_to_limbs(&be)
+}
+
+/// A decimal integer string to 32 big-endian bytes, by repeated division by 256.
+/// Each division step's remainder is the next least-significant byte.
+fn decimal_to_be32(dec: &str) -> [u8; 32] {
+    let mut digits: Vec<u8> = dec.bytes().filter(u8::is_ascii_digit).map(|b| b - b'0').collect();
+    if digits.is_empty() {
+        return [0u8; 32];
+    }
+    let mut le = Vec::new();
+    while digits.iter().any(|&d| d != 0) {
+        let mut carry = 0u32;
+        for d in digits.iter_mut() {
+            let cur = carry * 10 + *d as u32; // carry < 256, so cur/256 <= 9: a valid digit
+            *d = (cur / 256) as u8;
+            carry = cur % 256;
+        }
+        le.push(carry as u8);
+    }
     let mut be = [0u8; 32];
+    for (i, b) in le.iter().take(32).enumerate() {
+        be[31 - i] = *b;
+    }
+    be
+}
+
+/// A hex string to 32 big-endian bytes, right-aligned (low bytes preserved).
+fn hex_to_be32(h: &str) -> [u8; 32] {
+    let padded = if h.len() % 2 == 1 { format!("0{h}") } else { h.to_string() };
     let bytes: Vec<u8> = (0..padded.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&padded[i..i + 2], 16).unwrap_or(0))
         .collect();
-    let start = 32usize.saturating_sub(bytes.len());
-    be[start..start + bytes.len().min(32)].copy_from_slice(&bytes[..bytes.len().min(32)]);
-    root_to_limbs(&be)
+    let mut be = [0u8; 32];
+    // keep the LOW 32 bytes (right-aligned), the canonical field-element form.
+    let take = bytes.len().min(32);
+    be[32 - take..].copy_from_slice(&bytes[bytes.len() - take..]);
+    be
 }
 
 /// Minimal JSON reader for the array of `{"index", "root"}` steps. Deliberately
@@ -66,7 +106,7 @@ fn parse_steps(raw: &str) -> Vec<RootStep> {
             .split("\"root\"")
             .nth(1)
             .and_then(|s| s.split('"').nth(1))
-            .map(parse_root_hex);
+            .map(parse_root);
         if let (Some(index), Some(root)) = (index, root) {
             steps.push(RootStep { index, root });
         }
@@ -91,6 +131,58 @@ fn write_publics_bin(path: &str, steps: &[RootStep]) {
         buf.extend_from_slice(&l.to_le_bytes());
     }
     fs::write(path, &buf).unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{decimal_to_be32, hex_to_be32, parse_root};
+
+    #[test]
+    fn small_decimals_are_big_endian() {
+        assert_eq!(decimal_to_be32("0"), [0u8; 32]);
+        let mut e = [0u8; 32];
+        e[31] = 255;
+        assert_eq!(decimal_to_be32("255"), e);
+        let mut e = [0u8; 32];
+        e[30] = 1;
+        e[31] = 0;
+        assert_eq!(decimal_to_be32("256"), e);
+    }
+
+    #[test]
+    fn decimal_and_hex_of_one_value_agree() {
+        // 255, 256, and a wider value, in both forms.
+        assert_eq!(decimal_to_be32("255"), hex_to_be32("ff"));
+        assert_eq!(decimal_to_be32("256"), hex_to_be32("100"));
+        assert_eq!(decimal_to_be32("18446744073709551619"), hex_to_be32("10000000000000003"));
+        assert_eq!(parse_root("255"), parse_root("0xff"));
+    }
+
+    #[test]
+    fn a_full_width_bn254_root_round_trips_faithfully() {
+        // The real first root of the demo history, decimal, must map to the exact
+        // 32 big-endian bytes of that integer. The bug this replaced parsed the
+        // decimal AS hex and dropped the high bytes; here the high byte survives.
+        let dec = "9667236958756909525649769644727778012477910539601936707706602150991285581632";
+        let be = decimal_to_be32(dec);
+        assert_ne!(be[0], 0, "the high byte must survive; the old bug dropped it");
+        // decimal and the equivalent hex agree byte for byte (0x155f7653… computed
+        // independently as the hex of the decimal above)
+        assert_eq!(
+            be,
+            hex_to_be32("155f7653e0306cc8d7fa1416069cf7961b1a60c2c23631f032019e6e6661f740")
+        );
+    }
+
+    #[test]
+    fn distinct_roots_differing_only_high_produce_distinct_labels() {
+        // Injectivity where the old truncating parser collided: two values equal
+        // in their low bytes but different high must map to different labels.
+        let a = "1".to_string() + &"0".repeat(70); // 10^70, differs high
+        let b = "2".to_string() + &"0".repeat(70); // 2*10^70
+        assert_ne!(parse_root(&a), parse_root(&b));
+        assert_ne!(decimal_to_be32(&a), decimal_to_be32(&b));
+    }
 }
 
 fn main() {
