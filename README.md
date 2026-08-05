@@ -58,6 +58,13 @@ consults the gate cross-contract before it will spend. No attestation, no
 admitted root; no admitted root, no spend — all on Stellar, with receipts
 ([`guarded-pool/`](guarded-pool/), [`onchain-verifier/`](onchain-verifier/)).
 
+**Drop-in, demonstrated:** the bootnode is not just protocol-shaped — the
+official Stellar codec parses what it serves. `node
+examples/wallet-syncs-from-bootnode.mjs` starts the bootnode over the real
+15-leaf history and decodes every served event with **`@stellar/stellar-base`**
+(the codec Nethermind's SPP client and every Stellar wallet use), recovering all
+15 ASP roots. A real wallet points `bootnode_url` here and syncs.
+
 On-chain ZK is not new on Stellar, so the claim is narrow and checkable: to our
 knowledge this is the first **transparent, hash-based STARK** (Circle-STARK over
 Mersenne-31, FRI + keccak) verified **natively** on-chain on Stellar — *not*
