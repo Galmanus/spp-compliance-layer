@@ -94,7 +94,7 @@ flowchart LR
     asp  -->|root history| idx
     idx  --> clock
     idx  -->|"(index, root) steps"| stark
-    stark -->|"attestation, ~22 KB"| reg["regulator / verifier<br/>no trusted setup, no quantum expiry"]
+    stark -->|"attestation, ~131 KB @ 62 quantum-bit"| reg["regulator / verifier<br/>no trusted setup, no quantum expiry"]
 
     style L1 fill:#fff3e0,stroke:#e65100
     style L2 fill:#e3f2fd,stroke:#1565c0
@@ -228,13 +228,21 @@ field from the M31 STARK; reproving it is out of scope and stated as such). What
 a quantum adversary cannot forge is the *shape* of the chain — a reordered or
 leaf-injected history is unprovable, not merely unverifiable.
 
-**Measured** — attestation is tiny because it reproves no hash:
+**Measured** — soundness is a query count the prover and verifier share
+(`attestation/src/lib.rs`). Bits are from riverrun-m31's own round-by-round
+accounting at `log_blowup = 1` over the QM31 degree-4 field, plus 8 PoW bits.
+The attestation is verified off-chain by a regulator, so proof size is not bound
+by the tx envelope:
 
-| history | proof size | prove time | envelope |
+| queries | classical bits | quantum bits | proof (15-leaf) |
 |:--|:--:|:--:|:--:|
-| 6 root updates | 16,706 B | 0 ms | 13% |
-| 60 root updates | 33,537 B | 4 ms | 25% |
-| **250 root updates** | **47,922 B** | **14 ms** | **36%** |
+| 20 (earlier) | 28 | 14 | 21,688 B |
+| **128 (shipped)** | **124** | **62** | **134,357 B** |
+
+62 quantum bits is the ceiling of the QM31 challenge field (`|E| ≈ 2^124`): more
+queries buy nothing past it, and exceeding it needs a larger extension field —
+new cryptography, not a config change. It is chosen honestly over the earlier
+14, which was too few to call post-quantum in any real sense.
 
 ### Demonstrated on real on-chain history
 
@@ -248,7 +256,7 @@ events it emitted. Every number below reproduces from the contract ID; see
 $ node bin/spp-index.mjs ingest        # captured 15 REAL events from the chain
   no gaps from genesis to 3,969,521
 $ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
-  post-quantum attestation: 21,688 bytes, covers root indices 0..14
+  post-quantum attestation: 134,357 bytes, covers root indices 0..14
 
 $ attestation/target/release/verify-asp-history \
     attestation.postcard 0 <first_root> <last_root> 15     # a regulator checks
@@ -268,10 +276,15 @@ because the party proving and the party checking are different people. A tampere
 final root turns the `VALID` into `INVALID` — the attestation is a proof, not a
 blob.
 
-Its own limits are published, not implied: **92 bits classical soundness, 46
-against a quantum adversary**, a compression function known not to be collision
-resistant, a zero-knowledge argument two of whose components are proved and the
-rest inherited — full accounting in the [mirror-pool](https://github.com/Galmanus/mirror-pool) repo.
+Its own limits are published, not implied: **124 bits classical soundness, 62
+against a quantum adversary** at the shipped 128 queries — the QM31 field ceiling,
+short of a 128-bit target and honestly named as such. The compression function is
+not assumed collision resistant, and the argument's zero-knowledge is two proved
+components and the rest inherited — full accounting in the
+[mirror-pool](https://github.com/Galmanus/mirror-pool) repo. The attestation is
+post-quantum in construction (hash-based, no trusted setup, no pairing); it does
+not make the SPP/OZ privacy proofs themselves post-quantum — those are BN254, and
+no drop-in post-quantum replacement for them exists (the SDF says so).
 
 ---
 

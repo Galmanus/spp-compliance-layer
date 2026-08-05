@@ -55,7 +55,7 @@ fn main() {
     let last_root = parse_limbs(&args[4]);
     let events: usize = args[5].parse().expect("events");
 
-    let ok = verify_asp_history(&proof, start_index, first_root, last_root, events, 20);
+    let ok = verify_asp_history(&proof, start_index, first_root, last_root, events, spp_attestation::NUM_QUERIES);
 
     if ok {
         println!(

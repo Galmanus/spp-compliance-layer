@@ -29,8 +29,9 @@ RPC's reach in ~3 days, during judging weekend. The clock is in the tool.
 ASP roots are attested by Groth16 over BN254: a trusted setup to rely on, a
 quantum adversary to outlive, on a permanent ledger. A hash-based Circle-STARK
 attestation removes both at the seam the pool already exposes (get_root). Its
-limits are published, not implied: 92 bits classical, 46 quantum, a compression
-function known not to be collision resistant.
+limits are published, not implied: at the shipped 128 queries, 124 bits
+classical, 62 quantum (the QM31 field ceiling), a compression function not
+assumed collision resistant.
 
 ## The spine (metacognitive security paper)
 

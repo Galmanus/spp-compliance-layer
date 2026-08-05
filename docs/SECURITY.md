@@ -35,16 +35,23 @@ verifying proof of a forged history — see `attestation/tests/roundtrip.rs`.)
 
 The security rests on the collision resistance of the hash inside the STARK and
 on FRI soundness — both hash-based, so a quantum adversary gains only a Grover
-square-root speedup, not a Shor break. Concretely, from riverrun-m31's
-`examples/soundness_budget.rs`:
+square-root speedup, not a Shor break. The figures are computed for THIS
+attestation's actual config (`attestation/src/lib.rs`: `log_blowup = 1`, QM31
+degree-4 challenge field, 8 PoW bits), using riverrun-m31's own round-by-round
+formula (`examples/qm31_ceiling.rs`):
 
-- **92 bits** of soundness classically, **46 bits** against a quantum adversary
-  (Grover halves it), under the standard capacity conjecture;
-- **50 / 25 bits** under the proved Johnson bound.
+- at the shipped **128 queries**: **124 bits classical, 62 bits against a quantum
+  adversary** (Grover halves it);
+- 62 quantum bits is the QM31 field ceiling — additional queries do not exceed
+  it, and a larger extension field would be new cryptography;
+- the earlier 20-query setting was **28 / 14 bits**, not the 92 / 46 an earlier
+  draft cited (that figure was riverrun's binding proof at a different config,
+  and did not describe this attestation).
 
-These are the honest figures. They are below a production target, and the
-attestation is a research demonstration, not a system to place real value
-behind — stated here rather than left implied.
+These are the honest figures. 62 quantum bits is below a 128-bit production
+target: the attestation is post-quantum in construction (hash-based, no trusted
+setup) but this parameterisation is a demonstration at the field ceiling, not a
+system to place real value behind — stated here rather than left implied.
 
 ## What is assumed, not proven
 

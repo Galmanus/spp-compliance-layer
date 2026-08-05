@@ -95,7 +95,7 @@ fn main() {
 
     // Smallest committed height that fits the history; CirclePcs needs >= 4 rows.
     let log_rows = (events.next_power_of_two().trailing_zeros() as usize).max(2);
-    let proof = prove_asp_history(&steps, log_rows, 20);
+    let proof = prove_asp_history(&steps, log_rows, spp_attestation::NUM_QUERIES);
     let bytes = proof.to_postcard();
 
     let proof_path = format!("{outdir}/attestation.postcard");
