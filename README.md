@@ -305,7 +305,7 @@ by the tx envelope:
 | queries | classical bits | quantum bits | proof (15-leaf) |
 |:--|:--:|:--:|:--:|
 | 20 (earlier) | 28 | 14 | 21,688 B |
-| **128 (shipped)** | **124** | **62** | **134,357 B** |
+| **128 (shipped)** | **124** | **62** | **134,457 B** |
 
 62 quantum bits is the ceiling of the QM31 challenge field (`|E| ≈ 2^124`): more
 queries buy nothing past it, and exceeding it needs a larger extension field —
@@ -324,7 +324,7 @@ events it emitted. Every number below reproduces from the contract ID; see
 $ node bin/spp-index.mjs ingest        # captured 15 REAL events from the chain
   no gaps from genesis to 3,969,521
 $ node bin/spp-index.mjs attest CDP7Z7U2W45KFLQRYUOORZEBJOA7D3XC32IUDNDCWHFAJOJRSCCPBRZR
-  post-quantum attestation: 134,357 bytes, covers root indices 0..14
+  post-quantum attestation: 134,457 bytes, covers root indices 0..14
 
 $ attestation/target/release/verify-asp-history \
     attestation.postcard 0 <first_root> <last_root> 15     # a regulator checks
