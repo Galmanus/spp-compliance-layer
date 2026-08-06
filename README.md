@@ -6,13 +6,17 @@
   ██       ██       ██
   ██       ██       ██         for Stellar Private Payments
 
-  ▸ the memory the RPC deletes, and the proof the pairing cannot outlive
+  ▸ POST-QUANTUM compliance, verified on-chain — the proof the pairing cannot outlive
 ```
 
-**A verifiable bootnode for Stellar Private Payments — the durable event archive
-their client already reaches for, made trust-minimized: it serves the history
-the RPC forgets with a completeness proof and a post-quantum attestation the
-reference bootnode's own docs say it lacks.**
+# A post-quantum compliance layer for Stellar Private Payments — verified on-chain
+
+**It serves the private-payment history the RPC forgets, proves it complete, and
+attests it with a hash-based Circle-STARK — no elliptic curves, no pairings, no
+trusted setup — verified natively inside a Soroban contract. Every other proof on
+Stellar today is BN254, which a quantum computer breaks; this one only bends. To
+our knowledge, the first transparent post-quantum proof verified on-chain on
+Stellar.**
 
 [![on-chain PQ](https://img.shields.io/badge/post--quantum%20STARK-verified%20on--chain%20on%20Stellar-6a1b9a)](#a-first-on-stellar--a-post-quantum-proof-verified-on-chain)
 [![tests](https://img.shields.io/badge/tests-31%20JS%20%2B%2015%20Rust%20green-4c1)](#run-it-yourself-in-five-minutes)
