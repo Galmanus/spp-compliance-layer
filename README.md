@@ -90,6 +90,44 @@ reproduction: **[docs/ONCHAIN-VERIFICATION.md](docs/ONCHAIN-VERIFICATION.md)**.
 
 ---
 
+## Why post-quantum — and what, exactly, is (and isn't)
+
+**The threat.** A large quantum computer running *Shor's algorithm* breaks the
+elliptic-curve and pairing cryptography every ZK proof on Stellar rests on today.
+This is not hypothetical for this lane: the SPP shielded pool proves with
+**Groth16 over BN254**, and OpenZeppelin's Confidential Token with **UltraHonk
+over BN254** — both broken by Shor for the same reason it breaks Ed25519. The
+SDF's own Quantum Preparedness Plan says it in one line: *"there is no drop-in
+post-quantum replacement for pairing-based SNARKs."* So a compliance proof built
+on that curve can, in time, be **forged** by a quantum adversary — and a private
+transaction **retroactively de-anonymized**.
+
+**Why a hash-based STARK is the answer.** Our Layer-3 attestation is a
+Circle-STARK: its security reduces to the collision-resistance of a hash function
+and FRI soundness — **no curves, no pairings, no trusted setup**. Against those, a
+quantum computer gets only *Grover's* quadratic speed-up — it *halves* the
+security bits — never Shor's exponential break. That is the whole difference:
+"weakened, so add more queries" versus "broken, start over." A pairing SNARK is in
+the second category; this attestation is in the first.
+
+**What we make post-quantum — precisely, and where we stop.** We make the
+**compliance record** post-quantum and verify it **on-chain**: the proof that the
+ASP root history is a gap-free, honestly-ordered sequence. We do **not** make the
+SPP/OZ **privacy proofs themselves** post-quantum — those are BN254, and that is
+the open research problem the SDF names, which no one has solved. We attest the
+part that *can* be made quantum-safe today, on-chain, and we say so plainly about
+the part that can't. (Honest numbers: 62 quantum-bits off-chain, 24 on-chain at
+the one-transaction budget — [`docs/SECURITY.md`](docs/SECURITY.md).)
+
+**Why it matters now, not in 2035.** A compliance record must *outlive the data it
+certifies*: a regulator in 2035 has to be able to check that a 2026 approval set
+was built honestly, long after a quantum computer could forge a BN254 proof.
+"Harvest now, forge later" applies to attestations as much as to encryption. A
+Groth16 attestation cannot make that promise across the quantum transition; a
+transparent, hash-based STARK — verifiable on-chain, with no setup to leak — can.
+
+---
+
 > Submitted to the **Confidential-Token & Private-Payment Wallets** sub-lane,
 > under the brief's *ecosystem infrastructure* heading. Twenty teams will build
 > wallets on primitives that describe themselves as unaudited works in progress.
