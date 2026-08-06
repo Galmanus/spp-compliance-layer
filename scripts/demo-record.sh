@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Terminal demo for the README. Real testnet data, told as a clean story.
+# GIF: asciinema rec ... then agg --theme "16161e,e8e4da,16161e,e88a86,9ece9e,e0c896,7aa2f7,bb9af7,7dcfff,f0ece2" (AGG THEME: bg,fg,palette — dark ink/bone editorial)
 # No `set -e`: the tampered-proof verify exits non-zero by design (INVALID).
 set -uo pipefail
 cd "$(dirname "$0")/.."
