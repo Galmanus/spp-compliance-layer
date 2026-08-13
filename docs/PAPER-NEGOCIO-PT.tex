@@ -1,0 +1,378 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+
+% --- cores ---
+\definecolor{ink}{HTML}{1A1A2E}
+\definecolor{klein}{HTML}{1F4FD6}
+\definecolor{soft}{HTML}{F4F5F7}
+\definecolor{rule}{HTML}{C9CED6}
+\definecolor{gold}{HTML}{B8860B}
+
+\hypersetup{colorlinks=true, linkcolor=klein, urlcolor=klein, citecolor=klein}
+
+% --- títulos ---
+\titleformat{\section}{\Large\bfseries\color{ink}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries\color{ink}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.6em}
+
+% --- cabeçalho / rodapé ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{ink}\textbf{SPP Compliance Layer}}
+\fancyhead[R]{\small\color{ink}paper de negócio}
+\fancyfoot[C]{\small\thepage}
+
+% --- caixa de destaque ---
+\newcommand{\keybox}[1]{%
+  \par\vspace{0.6em}%
+  \noindent\colorbox{soft}{\parbox{\dimexpr\linewidth-2\fboxsep}{%
+  \vspace{0.3em}\small #1\vspace{0.3em}}}%
+  \par\vspace{0.6em}%
+}
+
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\setlist[itemize]{leftmargin=1.3em, itemsep=0.25em, topsep=0.35em}
+
+\begin{document}
+
+% --- capa ---
+\begin{center}
+{\LARGE\bfseries\color{ink} SPP Compliance Layer}\\[0.4em]
+{\large\color{klein} Capturar capital institucional para a Stellar}\\[0.2em]
+{\normalsize\color{ink} fechando o trilema privacidade $\times$ compliance $\times$ durabilidade quântica}\\[1.2em]
+{\small Manuel Galmanus \quad$\cdot$\quad 07 de agosto de 2026}
+\end{center}
+
+\vspace{0.6em}
+\hrule height 0.4pt
+\vspace{1.2em}
+
+\section*{Sumário executivo}
+\addcontentsline{toc}{section}{Sumário executivo}
+
+Capital institucional não entra em blockchain pública por três razões que se
+bloqueiam mutuamente. Uma tesouraria não pode expor posições e contrapartes
+(\textbf{privacidade}); um regulador não aceita privacidade sem allow-list e
+trilha de auditoria (\textbf{compliance}); e nenhum dos dois aceita que a prova de
+compliance se apoie em criptografia que um computador quântico vai quebrar num
+livro-razão permanente (\textbf{durabilidade}). A Stellar já resolveu a primeira
+perna, com os primitivos de pagamento privado da Nethermind e o Confidential Token
+da OpenZeppelin. As duas outras estão abertas --- e são exatamente onde o
+\textbf{SPP Compliance Layer} atua.
+
+\keybox{\textbf{Tese.} O SPP Compliance Layer transforma a privacidade que a
+Stellar já tem no produto que uma instituição pode de fato usar: uma política de
+compliance provada honesta por criptografia \textbf{pós-quântica} e imposta
+\textbf{on-chain}. Com isso, remove o bloqueador que hoje mantém tesourarias,
+custodiantes e emissores de RWA fora da rede.}
+
+O ponto não é ``mais uma prova de conhecimento zero''. Os primitivos de
+privacidade da Stellar hoje provam com \emph{pairing} sobre BN254 (Groth16,
+UltraHonk), e a própria SDF afirma, no Quantum Preparedness Plan:
+\emph{``there is no drop-in post-quantum replacement for pairing-based SNARKs.''}
+Uma atestação de compliance construída sobre essa curva pode, com o tempo, ser
+\textbf{forjada}. O SPP Compliance Layer atesta a parte que se pode tornar
+pós-quântica hoje --- o histórico da política de compliance --- com um STARK
+baseado em hash, verificado dentro de um contrato Soroban.
+
+\section{O problema, com precisão}
+
+Um pagamento privado numa \emph{privacy pool} esconde valor e contraparte. Para
+uma instituição isso é condição necessária, não suficiente. Faltam três coisas, e
+é a combinação delas que trava a migração:
+
+\begin{enumerate}[leftmargin=1.6em, itemsep=0.4em]
+\item \textbf{A política de compliance é esquecida pela rede.} A carteira
+reconstrói estado relendo todos os eventos que a \emph{pool} já emitiu; o Soroban
+RPC guarda apenas $\approx$7 dias desses eventos (janela medida: 120.959 ledgers
+$\approx$ 7,01 dias, que ainda \emph{desliza} com a cadeia). O histórico das
+raízes de compliance --- o \emph{association set} que um provedor (ASP) publica ---
+some da RPC durante um fim de semana. Sem esse histórico, ninguém prova, depois,
+que a política era íntegra.
+
+\item \textbf{A lacuna já tem um remédio oficial --- inseguro.} O cliente SPP da
+Nethermind já faz \emph{handoff} para um \code{bootnode\_url} quando bate no buraco
+de retenção (\code{sdk/client/src/sync.rs}). E a documentação da própria Nethermind
+(\code{docs/src/bootnode.md}) \textbf{nomeia} \emph{forged-history},
+\emph{selective-omission} e \emph{misleading-handoff} como riscos \emph{não}
+mitigados --- a única mitigação oferecida é ``cruze com múltiplos provedores de
+RPC'', que é confiança social, não prova.
+
+\item \textbf{A prova de honestidade é quebrável por Shor.} Mesmo com o histórico
+preservado, atestá-lo com Groth16/BN254 significa um \emph{trusted setup} para
+confiar e um adversário quântico para sobreviver, num registro permanente.
+``Harvest now, forge later'' vale para atestações tanto quanto para cifragem.
+\end{enumerate}
+
+Uma tesouraria olha para isso e conclui, corretamente, que a privacidade da
+Stellar ainda não é utilizável em escala institucional. Não por falta de
+privacidade --- por falta da camada que a torna auditável, durável e imposta.
+
+\section{A solução, concretamente}
+
+Três peças fecham exatamente essas três lacunas, e o laço fecha nos dois lados:
+sem prova, nenhuma política admitida; sem política admitida, nenhum gasto.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{3.1cm}p{6.2cm}p{4.4cm}@{}}
+\toprule
+\textbf{Peça} & \textbf{O que impõe} & \textbf{Custo on-chain medido} \\
+\midrule
+Atestação pós-quântica & prova que o histórico de raízes de compliance é uma
+sequência \emph{append-only} sem lacunas (Circle-STARK baseado em hash, sem
+\emph{trusted setup}, sem \emph{pairing}) & \emph{proof} $\approx$131 KB
+(off-chain, 62 bits quânticos) \\
+\addlinespace
+Gate de compliance \code{admit\_root} & registra uma raiz como válida on-chain
+\textbf{só se} a prova pós-quântica verificar na mesma transação & 260M de 400M
+instruções (65\% do teto), wasm 115 KB, $\approx$0,0385 XLM \\
+\addlinespace
+Pool com política \code{spend} & liquida um pagamento confidencial \textbf{só
+contra uma raiz admitida} (\emph{cross-contract} \code{is\_attested}) & recibo
+on-chain, \emph{replay} recusado \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Recibos vivos na testnet (clicáveis no repositório): a raiz é admitida na
+transação \code{a2c3227c\ldots}, o gasto liquida contra ela na
+\code{255db58d\ldots}, e uma prova adulterada ou raiz não-admitida é
+\textbf{recusada on-chain}. Nada é mockado: cada número sai de um comando do
+próprio repositório.
+
+O diferencial técnico contra o estado da arte é estreito e verificável: todo
+verificador de conhecimento zero on-chain na Stellar hoje é \emph{pairing-based}
+(Groth16, UltraHonk, RISC~Zero via seu embrulho Groth16). Este é --- até onde a
+busca pública alcança --- o primeiro STARK \textbf{transparente, baseado em hash},
+verificado \textbf{nativamente} num contrato Soroban e tornado \emph{load-bearing}
+numa política de compliance. Contra um adversário quântico ele apenas
+\emph{enfraquece} (Grover corta os bits pela metade); nunca \emph{quebra} (Shor).
+É a diferença entre ``enfraquecido, some mais consultas'' e ``quebrado, comece de
+novo''.
+
+\section{Por que isto destrava migração de capital}
+
+O argumento causal, sem retórica:
+
+\begin{itemize}
+\item Uma instituição só move capital para um trilho quando os três ---
+confidencialidade, compliance e durabilidade --- estão satisfeitos \textbf{ao
+mesmo tempo}. Falha em um veta o conjunto.
+\item A Stellar entrega o primeiro com os primitivos existentes. O SPP Compliance
+Layer entrega os outros dois: índice durável $+$ \emph{bootnode} verificável
+(fecha o buraco de retenção e os riscos que a Nethermind documenta como abertos) e
+atestação pós-quântica imposta on-chain (fecha o risco de forja futura).
+\item Portanto o Compliance Layer não compete com as carteiras da rede --- \textbf{é
+aquilo de que elas dependem}. Cada carteira aponta seu \code{bootnode\_url} para cá
+e passa a \emph{gatear} compliance na mesma atestação pós-quântica.
+\end{itemize}
+
+\keybox{\textbf{Posicionamento, com disciplina.} Isto não é uma custódia nem um
+trilho de liquidação com garantia de recuperação de fundos. É a camada de
+\emph{prova de integridade da política} sobre a qual uma custódia pode se apoiar.
+Torna a privacidade da Stellar auditável e durável; não guarda o ativo nem assume
+obrigação de VASP. Esse enquadramento é o que sustenta a conversa com um jurídico
+institucional.}
+
+\section{Por que Stellar, e não Ethereum ou Solana}
+
+Um argumento de plataforma, com número, não com torcida:
+
+\begin{itemize}
+\item O mesmo relacionamento criptográfico já rodou nas três redes. Em Solana a
+parede foi o \emph{heap} de 256 KB (2,38M CU em LiteSVM). Na Stellar a memória
+pica em 2,1 MB de 40 MB e a parede de CPU caiu para 62\% do teto de uma
+transação, \textbf{sem mudança de protocolo} --- só uma \emph{host-function} de
+keccak que já existe e uma \emph{flag} de compilador.
+\item O que no Ethereum L1 exigiu um verificador Solidity dedicado e anos de
+engenharia de uma empresa feita para isso, aqui roda como um contrato wasm comum
+de $\approx$115 KB que qualquer um implanta, em uma transação, por $\approx$2
+centavos de dólar.
+\item Ou seja: a Stellar tem, hoje e sem \emph{fork}, o \emph{headroom} para
+carregar criptografia pós-quântica pesada dentro dos limites de uma transação.
+Esse é um argumento concreto para trazer a migração \emph{para cá}.
+\end{itemize}
+
+\section{Mercado: a dor tem dono, e tem número}
+
+O valor de RWA tokenizado on-chain (ex-stablecoins) saiu de $\approx$US\$~6~bi no
+início de 2025 para \textbf{US\$~33,5~bi} em julho de 2026 (rwa.xyz, via Stobox),
+um crescimento de $\approx$4--5$\times$ em dezoito meses; tesouros tokenizados são
+$\approx$2/3 do setor. As projeções para 2030 vão de US\$~2~tri (McKinsey, base
+conservadora) a US\$~16~tri (BCG) --- um intervalo de 8$\times$ entre analistas
+sérios, em que a direção é consenso e só a inclinação é disputada.
+
+A Stellar não está de fora dessa corrida: é a \textbf{quarta maior rede de RWA,
+com 9,0\%} do valor on-chain (Stobox, jul/2026), atrás de Ethereum, BNB e Solana;
+foi na Stellar que a Franklin Templeton lançou seu fundo on-chain (BENJI). O
+capital já está chegando --- e a próxima leva depende de infraestrutura, não de
+mais permissão regulatória.
+
+Porque o gargalo declarado, por quem move o dinheiro, é privacidade e compliance:
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{3.6cm}p{9.6cm}@{}}
+\toprule
+\textbf{Fonte} & \textbf{O que diz} \\
+\midrule
+Visa, jun/2026 & ``Many banks see the lack of privacy as a dealbreaker for moving
+meaningful activity onchain.'' (Rubail Birwadker, Global Head of Growth Products) \\
+\addlinespace
+DRW, mar/2026 & Publicar toda operação on-chain seria ``a failure of fiduciary
+duty''; ``privacy is kind of at the top of the list'' para adoção institucional.
+(Don Wilson, CEO) \\
+\addlinespace
+EEA Privacy WG & ``Privacy and confidentiality are not features --- they are
+prerequisites for enterprise adoption.'' \\
+\addlinespace
+Fireblocks, abr/2026 & O que falta é ``the compliance layer alongside the privacy
+layer, which is where most implementations fall short.'' \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+E o diagnóstico de infraestrutura é explícito: relatórios de 2026 (BitMart,
+RedStone) apontam que \emph{``the deployment gap is an infrastructure problem, not
+a regulatory one''} --- de $\approx$US\$~27~bi em RWA tokenizado, apenas
+$\approx$10\% é ativamente utilizável; os outros $\approx$90\% ficam parados em
+carteiras, rendendo mas sem circular.
+
+\keybox{A leitura de mercado converge para uma frase: falta a \textbf{camada de
+compliance ao lado da camada de privacidade}. É exatamente o que este projeto é
+--- com uma diferença que ninguém mais no setor está entregando: a atestação de
+compliance é \textbf{pós-quântica e imposta on-chain}, não pairing-based.}
+
+\subsection*{Contexto competitivo, sem ilusão}
+
+Parte do capital institucional escolhe redes permissionadas (Canton, com a Visa
+como \emph{Super Validator}; o Kinexys do JPMorgan liquida US\$~7~bi/dia). O SPP
+Compliance Layer não disputa esse segmento fechado. Ele atende o capital que
+escolhe trilhos \textbf{confidenciais em cadeia pública} --- o campo que Visa,
+Chainlink (Privacy Standard, prova de compliance on-chain) e Fireblocks estão
+correndo para equipar, e onde a Stellar já tem 9\% do RWA. A aposta é estreita e
+explícita: nesse campo, ser pós-quântico e nativo do Soroban é uma vantagem que os
+concorrentes pairing-based não têm.
+
+\section{Público-alvo}
+
+\begin{itemize}
+\item \textbf{Emissores de RWA e ativos tokenizados regulados} --- precisam de
+allow-list imposta e de trilha de auditoria que sobreviva à vida longa do ativo.
+\item \textbf{Tesourarias e mesas de OTC/B2B} --- pagamento confidencial entre
+partes com política de identidade, sem expor posição ao mercado.
+\item \textbf{Custodiantes e provedores de compliance (ASPs)} --- operam a
+política; o Compliance Layer dá a eles uma atestação que um regulador aceita como
+prova, não como promessa.
+\item \textbf{Reguladores e auditores} --- o consumidor final da atestação:
+verificam a integridade de um conjunto de aprovação de 2026 em 2035, mesmo depois
+que um quântico poderia forjar um BN254.
+\end{itemize}
+
+O gancho comum a todos: precisam de privacidade \emph{do mercado}, não do
+regulador --- confidencialidade seletiva com trilha de auditoria --- e precisam
+que essa trilha sobreviva à vida longa do ativo. É o par exato que a seção de
+mercado documenta como o gargalo aberto.
+
+\section{Como monetiza}
+
+Três linhas de receita, em ordem de proximidade:
+
+\begin{enumerate}[leftmargin=1.6em]
+\item \textbf{Bootnode verificável como serviço.} Operar o \emph{bootnode}
+confiável que os clientes SPP apontam, com SLA e prova de cobertura. Assinatura
+por instituição.
+\item \textbf{Atestação como serviço.} Cobrar por atestação pós-quântica de
+histórico de compliance (por período/por \emph{pool}) para ASPs, emissores e
+custodiantes que precisam da prova para relatório regulatório.
+\item \textbf{Licenciamento do verificador on-chain $+$ SDK.} O contrato-\emph{gate}
+e o SDK de integração para quem quer \emph{gatear} liquidação na própria política.
+\end{enumerate}
+
+O primeiro marco de negócio é uma integração real --- um piloto com um ASP,
+emissor ou custodiante --- não um preço de tabela.
+
+\section{Roadmap}
+
+\begin{itemize}
+\item \textbf{Agora:} testnet, laço completo provado (\emph{gate} $+$ \emph{pool}),
+recibos vivos, dupla submissão no Stellar Summit (raia \emph{Wallets} e raia
+\emph{Enterprise/Compliance/RWA}).
+\item \textbf{Curto prazo:} elevar a segurança quântica on-chain de 24 bits (no
+orçamento de uma transação, 40 consultas) via camada recursiva --- a técnica
+STARKPack do próprio patrocinador --- a custo limitado. Off-chain já são 62 bits.
+\item \textbf{Médio prazo:} \emph{deploy} em mainnet (os limites de mainnet foram
+lidos de \code{getLedgerEntries} e todos os números cabem identicamente --- é
+decisão de \emph{funding}, não de engenharia). Primeira integração com um
+ASP/emissor real.
+\item \textbf{Longo prazo:} \emph{wiring} da \emph{pool} para \emph{exigir} a
+atestação como pré-condição de liquidação.
+\end{itemize}
+
+\section{Considerações de implementação}
+
+Ditas na frente, porque é o que sustenta credibilidade técnica --- cada uma com
+seu endereçamento:
+
+\begin{itemize}
+\item \textbf{A atestação prova estrutura de índice, não legitimidade de raiz.}
+Ela prova que o histórico é uma sequência \emph{append-only} sem lacunas sobre
+raízes testemunhadas, com \emph{endpoints} fixados em valores públicos --- legíveis
+on-chain. A ligação de \emph{completude} é a prova de cobertura da camada de índice.
+As duas juntas dão a garantia; declaradas com precisão, não infladas.
+\item \textbf{24 bits quânticos on-chain} no orçamento de uma transação, contra 62
+off-chain. O caminho recursivo (STARKPack) é o plano de escala para elevar a cifra
+on-chain a custo limitado.
+\item \textbf{Testnet, com caminho de mainnet medido.} Os limites de mainnet já
+foram lidos e todos os números cabem; o \emph{deploy} é decisão de \emph{funding}.
+\item \textbf{Enquadramento jurídico.} O posicionamento correto --- camada de prova
+de integridade, não custódia --- mantém o produto fora da obrigação de VASP e é
+sustentado com disciplina em todo material externo.
+\end{itemize}
+
+\section*{Fecho}
+\addcontentsline{toc}{section}{Fecho}
+
+A Stellar já tem privacidade. O que falta para ela receber capital institucional
+não é mais privacidade --- é a camada que torna essa privacidade auditável por um
+regulador e durável através da transição quântica, imposta pelo próprio
+livro-razão. Essa camada existe, roda na testnet com recibos, e é honesta sobre
+onde para. O trabalho de negócio a partir daqui é uma coisa só: converter uma
+prova técnica que funciona em uma integração institucional que paga.
+
+\vspace{1em}
+\hrule height 0.4pt
+\vspace{0.6em}
+\noindent{\small\color{ink} Repositório: \href{https://github.com/Galmanus/spp-compliance-layer}{github.com/Galmanus/spp-compliance-layer} \quad$\cdot$\quad MIT \quad$\cdot$\quad recibos e verificação independente em \code{VERIFY-IT-YOURSELF.md}}
+
+\section*{Fontes de mercado}
+\addcontentsline{toc}{section}{Fontes de mercado}
+\footnotesize
+\begin{itemize}[leftmargin=1.3em, itemsep=0.15em]
+\item Stobox, \emph{State of RWA Tokenization --- 2026 Mid-Year Report}, jul/2026 (US\$~33,5~bi on-chain; Stellar 9,0\%). \href{https://www.stobox.io/reports/state-of-rwa-2026}{stobox.io/reports/state-of-rwa-2026}
+\item CoinGecko, \emph{RWA Report 2026} (US\$~5,42~bi $\to$ US\$~19,3~bi, $+$256,7\%). \href{https://www.coingecko.com/research/publications/rwa-report-2026}{coingecko.com}
+\item BitMart / RedStone, \emph{State of RWA}, mai/2026 (US\$~24,6~bi TVL; ``infrastructure problem, not regulatory''; $\approx$10\% composável). \href{https://www.bitmart.com/static-file/resources/public/BitMart_State_of_RWA_Issue02_May2026.pdf}{bitmart.com}
+\item Chainalysis, \emph{Tokenized RWAs}, abr/2026 ($\approx$US\$~30~bi AUM; capital institucional supera o de varejo).
+\item Visa / FinTech Magazine, jun/2026 (``lack of privacy as a dealbreaker''). \href{https://fintechmagazine.com/news/visa-anchoring-trust-in-next-generation-enterprise-payments}{fintechmagazine.com}
+\item CoinDesk, \emph{DRW's Don Wilson on open ledgers}, mar/2026 (``failure of fiduciary duty''). \href{https://www.coindesk.com/business/2026/03/26/why-big-banks-are-snubbing-open-ledgers-to-build-their-own-private-blockchains}{coindesk.com}
+\item Fireblocks (Ran Goldi), \emph{The Blockchain Privacy Problem}, abr/2026 (``compliance layer alongside the privacy layer''). \href{https://www.fireblocks.com/blog/blockchain-privacy-problem}{fireblocks.com}
+\item Enterprise Ethereum Alliance, \emph{State of Privacy on Ethereum for Enterprise} (``prerequisites for enterprise adoption'').
+\item Projeções 2030: McKinsey (US\$~2~tri, base) e BCG (US\$~16~tri).
+\end{itemize}
+
+\end{document}

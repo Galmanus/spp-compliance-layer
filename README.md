@@ -26,7 +26,7 @@ Stellar.**
 [![lane](https://img.shields.io/badge/lane-Privacy%20%C2%B7%20OpenZeppelin%20%2B%20Nethermind-orange)](https://github.com/NethermindEth/stellar-private-payments)
 [![license](https://img.shields.io/badge/license-MIT-blue)](#license)
 
-![spp compliance layer explainer](assets/explainer.gif)
+![spp compliance layer explainer](assets/explainer-v2.gif)
 
 <sub>▶️ explainer — the history the RPC forgets, served and proven complete, attested with a post-quantum STARK verified on-chain. Full-quality MP4: [assets/explainer.mp4](assets/explainer.mp4).</sub>
 
