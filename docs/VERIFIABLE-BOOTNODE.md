@@ -80,7 +80,7 @@ not the availability one.
 ## Honest limits
 
 - The append-only attestation proves the STRUCTURE of the root history (indices
-  `0,1,2,…` with no gap, roots chained, endpoints pinned). It treats each
+  `0,1,2,…` with no gap, witnessed roots, endpoints pinned). It treats each
   BN254-Poseidon2 root as a witnessed label; it does not re-derive the hash
   inside the M31 STARK. Reproving a pairing-field hash in a Mersenne-31 field is
   out of scope, and stated so in `attestation/src/main.rs`.

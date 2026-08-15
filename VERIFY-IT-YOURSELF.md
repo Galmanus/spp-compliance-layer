@@ -69,7 +69,7 @@ git clone https://github.com/Galmanus/spp-compliance-layer
 cd spp-compliance-layer && npm install
 ```
 
-**B1. The tests pass — 31 JavaScript + 15 Rust:**
+**B1. The tests pass — 31 JavaScript + 16 Rust (8 attestation + 3 guarded-pool + 5 onchain-verifier):**
 
 ```bash
 npm test                                   # 31 pass, 0 fail

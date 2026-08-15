@@ -91,7 +91,7 @@ root; no admitted root, no spend.
 ```bash
 git clone https://github.com/Galmanus/spp-compliance-layer
 cd spp-compliance-layer && npm install && npm test        # 31 JS tests
-cd attestation && cargo test --release                    # 15 Rust tests (attestation + gate + pool)
+cd attestation && cargo test --release                    # 8 attestation tests (16 Rust total: + guarded-pool 3, onchain-verifier 5)
 cd ../onchain-verifier && cargo test --release --test measure -- --nocapture
                                                           # metered on-chain CPU
 ```

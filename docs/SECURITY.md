@@ -9,10 +9,11 @@ guarantees is worse than none.
 Given a sequence of ASP `LeafAdded(leaf, index, root)` events, the Layer-3
 Circle-STARK proves the predicate:
 
-> the events form a **consistent append-only chain**: the indices are
-> `s, s+1, s+2, …` with no gap; each row's root is carried unchanged into the
-> next as the tree's own update algorithm chains them; and the first and last
-> roots equal the public values the verifier checks against.
+> the events form a **gap-free append-only index structure over witnessed
+> roots**: the indices are `s, s+1, s+2, …` with no gap; padding rows repeat
+> the last root; and the first and last roots equal the public values the
+> verifier checks against. (The roots are witnessed inputs, not re-derived or
+> cryptographically chained — see "What is assumed, not proven" below.)
 
 Formally, for committed rows `(idxᵢ, rootᵢ)` with a real/padding selector `pᵢ`:
 
@@ -25,11 +26,17 @@ idx₀ = start_index,  root₀ = first_root       (first-row pin)
 root_last = last_root                         (last-row pin)
 ```
 
-A prover who submits a reordered, gap-having, or leaf-injected history cannot
-satisfy the index constraint, so **no proof that verifies exists** for such a
-history. (In a debug build the prover's constraint check fails closed at proving
-time; in release it emits a proof that then fails verification. Both preclude a
-verifying proof of a forged history — see `attestation/tests/roundtrip.rs`.)
+A prover who submits a **reordered or gap-having** history cannot satisfy the
+index constraint, so no verifying proof exists for such a history. (In a debug
+build the prover's constraint check fails closed at proving time; in release it
+emits a proof that then fails verification.) This does **not** extend to a
+fabricated history with chosen endpoints: because the roots are witnessed inputs
+(not re-derived), a made-up sequence with self-consistent indices and chosen
+first/last roots *does* verify — the passing test
+`witnessed_roots_a_fabricated_sequence_also_verifies` in
+`attestation/tests/roundtrip.rs` pins exactly this. The attestation is therefore
+meaningful only to a verifier who **independently knows the true endpoints** —
+see "What is assumed, not proven" below.
 
 ## What a quantum adversary cannot do
 

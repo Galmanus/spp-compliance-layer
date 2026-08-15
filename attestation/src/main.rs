@@ -14,9 +14,12 @@
 //! ## What the AIR proves, in one sentence
 //!
 //! Given the `LeafAddedEvent(leaf, index, root)` steps of an ASP, the STARK
-//! proves the indices are `0, 1, 2, …` with no gap, each root chains from the
-//! previous, and the endpoints match public values — so a reordered or
-//! leaf-injected history is *unprovable*, whatever the hash's strength. The
+//! proves the indices are `0, 1, 2, …` with no gap over the witnessed roots,
+//! with the first and last roots pinned to public values — so a reordered or
+//! gap-having history is *unprovable*. The roots themselves are witnessed
+//! inputs, not re-derived or chained; a fabricated sequence with chosen
+//! endpoints verifies, so the guarantee is meaningful only against endpoints
+//! the verifier independently knows (the ASP's genesis and current roots). The
 //! BN254-Poseidon2 compression the ASP uses is a witnessed oracle here, not
 //! reproven: the compliance property is the shape of the history, and reproving
 //! a pairing-field hash inside an M31 STARK is out of scope (and stated so).

@@ -24,7 +24,8 @@ SPP ships both an ASP-membership and an ASP-non-membership contract, each
 publishing a root history via `LeafAdded` events.
 
 The append-only-history AIR is **agnostic to which side it attests**: it proves a
-sequence of `(index, root)` steps is a monotone, gap-free, chained history,
+sequence of `(index, root)` steps is a gap-free, append-only index structure
+over witnessed roots (endpoints pinned; roots not re-derived),
 whichever set the roots summarise. So the same Layer-3 attestation, gate, and
 completeness accounting cover both the inclusion and the exclusion root histories
 with no change — the whole compliance model, not half of it. The on-chain

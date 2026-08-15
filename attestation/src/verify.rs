@@ -66,9 +66,15 @@ fn main() {
 
     if ok {
         println!(
-            "VALID: an honest append-only chain of {events} root updates ending at the \
-             attested root. No trusted setup was involved and no quantum adversary can \
-             forge the ordering."
+            "VALID: the attestation proves an append-only INDEX STRUCTURE over these \
+             {events} witnessed roots — gap-free consecutive indices with the first and \
+             last roots pinned to the public values you passed. Hash-based STARK, no \
+             trusted setup, nothing Shor breaks. NOTE: the roots are witnessed inputs, \
+             not re-derived or cryptographically chained; a fabricated sequence with \
+             chosen endpoints also verifies, so this is meaningful only if you \
+             independently know the true endpoints (the ASP's genesis and current \
+             roots, readable on-chain). It does not by itself prove these are the real \
+             ASP's roots."
         );
         std::process::exit(0);
     } else {
