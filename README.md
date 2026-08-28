@@ -47,6 +47,19 @@ leaves attested with a post-quantum STARK, verified, a tampered proof refused �
 then the same attestation verified on-chain and gating a spend. Nothing mocked;
 reproduce with `bash scripts/demo-record.sh`.*
 
+## Layer 4 — KYC-gated, unlinkable entry into the SPP Association Set (2026-08-28)
+
+The SPP preview keys compliance on the **Association Set**: a Merkle tree of
+approved pool keys the deployer's admin fills by hand, knowing who each key is.
+[`asp-admitter/`](asp-admitter/) becomes the admin of Nethermind's own
+`asp-membership` contract and inserts a pool key only after a hash-based STARK
+proof that the requester is in the issuer's KYC'd set, without revealing which
+member. Live on testnet against Nethermind's contract: admin handed over
+([`28c9ebdc…`](https://stellar.expert/explorer/testnet/tx/28c9ebdc880b3f5fd51d4121f89c3b13365d8cb5837dc6d77e0233fffbb62124)),
+key admitted with the proof and the ASP root moved
+([`47566736…`](https://stellar.expert/explorer/testnet/tx/4756673629c890f0e7fefdc8e36237f203d9690e91f4a91f948553d5e30b54e2)),
+replay / tampered proof / out-of-field key all rejected. Limits in its README.
+
 ## A first on Stellar — a post-quantum proof that gates on-chain state
 
 The Layer-3 attestation does not only verify off-chain, and it is not a parallel

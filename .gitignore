@@ -17,3 +17,6 @@ onchain-verifier/target/
 onchain-verifier/test_snapshots/
 
 guarded-pool/target/
+
+# cargo build output (all crates)
+**/target/
