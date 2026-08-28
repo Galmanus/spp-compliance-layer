@@ -89,4 +89,4 @@ hand-back, root rotation with `Used` surviving. Wasm 9.5 KB.
 - Side finding for Nethermind while building: `soroban-utils::MockToken` is not
   `cfg(test)`-gated and ships inside the production wasm of `asp-membership`,
   `asp-non-membership` and the pool (5 no-op token exports). Reported as
-  [NethermindEth/stellar-private-payments#528](https://github.com/NethermindEth/stellar-private-payments/issues/528).
+  [NethermindEth/stellar-private-payments#528](https://github.com/NethermindEth/stellar-private-payments/issues/528); fix proposed in [PR #530](https://github.com/NethermindEth/stellar-private-payments/pull/530).
