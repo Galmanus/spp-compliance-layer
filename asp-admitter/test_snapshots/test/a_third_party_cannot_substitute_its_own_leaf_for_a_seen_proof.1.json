@@ -30,11 +30,16 @@
       ]
     ],
     [],
+    [],
+    [],
+    [],
+    [],
+    [],
     []
   ],
   "ledger": {
     "protocol_version": 27,
-    "sequence_number": 1,
+    "sequence_number": 2,
     "timestamp": 0,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
@@ -273,7 +278,11 @@
               },
               "durability": "persistent",
               "val": {
-                "vec": []
+                "vec": [
+                  {
+                    "u256": "1000"
+                  }
+                ]
               }
             }
           },
@@ -317,19 +326,46 @@
                     "symbol": "Commit"
                   },
                   {
-                    "bytes": "43356daa50d96289c717215ad441c443bbdbf0de391502b0b4bd7b141276be69"
+                    "bytes": "824f929ed62d75df1a5c12b0f60364960639dfca53d62e08cb2c8a0eb95a9af7"
                   }
                 ]
               },
               "durability": "temporary",
               "val": {
-                "u32": 0
+                "u32": 1
               }
             }
           },
           "ext": "v0"
         },
-        "live_until": 34560
+        "live_until": 34561
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "key": {
+                "vec": [
+                  {
+                    "symbol": "Used"
+                  },
+                  {
+                    "bytes": "03030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "bool": true
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 535002
       },
       {
         "entry": {

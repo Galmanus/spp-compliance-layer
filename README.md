@@ -54,11 +54,13 @@ approved pool keys the deployer's admin fills by hand, knowing who each key is.
 [`asp-admitter/`](asp-admitter/) becomes the admin of Nethermind's own
 `asp-membership` contract and inserts a pool key only after a hash-based STARK
 proof that the requester is in the issuer's KYC'd set, without revealing which
-member. Live on testnet against Nethermind's contract: admin handed over
-([`28c9ebdc…`](https://stellar.expert/explorer/testnet/tx/28c9ebdc880b3f5fd51d4121f89c3b13365d8cb5837dc6d77e0233fffbb62124)),
-key admitted with the proof and the ASP root moved
-([`47566736…`](https://stellar.expert/explorer/testnet/tx/4756673629c890f0e7fefdc8e36237f203d9690e91f4a91f948553d5e30b54e2)),
-replay / tampered proof / out-of-field key all rejected. Limits in its README.
+member to the public or the pool operator. Commit-then-reveal, so a published
+proof cannot be hijacked with someone else's leaf. Live on testnet against
+Nethermind's contract, three admitter generations: admin handed over, leaves
+admitted with the proof and the ASP root moved
+([`844eac22…`](https://stellar.expert/explorer/testnet/tx/844eac228402f1b0d8431032b5347aedc7456a5a32fb0292856f6bf64678d0b1)),
+substitution / replay / tampered proof / out-of-field leaf all rejected, and a
+hand-back to a successor does not re-open old proofs. Limits in its README.
 
 ## A first on Stellar — a post-quantum proof that gates on-chain state
 

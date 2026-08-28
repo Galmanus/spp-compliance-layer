@@ -30,6 +30,7 @@
       ]
     ],
     [],
+    [],
     []
   ],
   "ledger": {
@@ -273,7 +274,11 @@
               },
               "durability": "persistent",
               "val": {
-                "vec": []
+                "vec": [
+                  {
+                    "u256": "1"
+                  }
+                ]
               }
             }
           },
@@ -314,22 +319,22 @@
               "key": {
                 "vec": [
                   {
-                    "symbol": "Commit"
+                    "symbol": "Used"
                   },
                   {
-                    "bytes": "43356daa50d96289c717215ad441c443bbdbf0de391502b0b4bd7b141276be69"
+                    "bytes": "03030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303"
                   }
                 ]
               },
-              "durability": "temporary",
+              "durability": "persistent",
               "val": {
-                "u32": 0
+                "bool": true
               }
             }
           },
           "ext": "v0"
         },
-        "live_until": 34560
+        "live_until": 535001
       },
       {
         "entry": {
@@ -438,5 +443,38 @@
       }
     ]
   },
-  "events": []
+  "events": [
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "key_admitted"
+              },
+              {
+                "u256": "1"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "asp_root"
+                  },
+                  "val": {
+                    "u256": "1"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    }
+  ]
 }

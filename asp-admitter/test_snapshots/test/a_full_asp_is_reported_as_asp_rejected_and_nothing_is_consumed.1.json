@@ -30,11 +30,14 @@
       ]
     ],
     [],
+    [],
+    [],
+    [],
     []
   ],
   "ledger": {
     "protocol_version": 27,
-    "sequence_number": 1,
+    "sequence_number": 2,
     "timestamp": 0,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
@@ -249,7 +252,7 @@
               },
               "durability": "persistent",
               "val": {
-                "u32": 100
+                "u32": 1
               }
             }
           },
@@ -273,7 +276,11 @@
               },
               "durability": "persistent",
               "val": {
-                "vec": []
+                "vec": [
+                  {
+                    "u256": "1"
+                  }
+                ]
               }
             }
           },
@@ -317,19 +324,46 @@
                     "symbol": "Commit"
                   },
                   {
-                    "bytes": "43356daa50d96289c717215ad441c443bbdbf0de391502b0b4bd7b141276be69"
+                    "bytes": "200d8b9410491840cf701937307747734ffd6f7d96459a80faad4171df7f941f"
                   }
                 ]
               },
               "durability": "temporary",
               "val": {
-                "u32": 0
+                "u32": 1
               }
             }
           },
           "ext": "v0"
         },
-        "live_until": 34560
+        "live_until": 34561
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "key": {
+                "vec": [
+                  {
+                    "symbol": "Used"
+                  },
+                  {
+                    "bytes": "03030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303030303"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "bool": true
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 535002
       },
       {
         "entry": {
