@@ -18,12 +18,12 @@ path = "src/verify.rs"
 # AIR (asp_history.rs) over Mersenne-31 with a QM31 challenge field. Pinned to
 # the public rev so a bare clone of THIS repo builds the attestation without the
 # mirror-pool checkout present.
-riverrun-m31 = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb", default-features = false, features = ["wire-postcard"] }
+riverrun-m31 = { git = "https://github.com/Galmanus/mirror-pool", rev = "d47c246", default-features = false, features = ["wire-postcard"] }
 
 [patch.crates-io]
 # riverrun-m31's documented Plonky3 patches, resolved from the same rev.
-p3-uni-stark = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb" }
-p3-circle = { git = "https://github.com/Galmanus/mirror-pool", rev = "bc109cb" }
+p3-uni-stark = { git = "https://github.com/Galmanus/mirror-pool", rev = "d47c246" }
+p3-circle = { git = "https://github.com/Galmanus/mirror-pool", rev = "d47c246" }
 
 [profile.release]
 opt-level = 3

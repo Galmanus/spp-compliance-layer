@@ -767,7 +767,7 @@ dependencies = [
 [[package]]
 name = "p3-circle"
 version = "0.6.2"
-source = "git+https://github.com/Galmanus/mirror-pool?rev=bc109cb#bc109cba0f7994a3ee73e18e78782cfc2c8d94c7"
+source = "git+https://github.com/Galmanus/mirror-pool?rev=d47c246#d47c24648a6c2371323793f90066109b756cd638"
 dependencies = [
  "itertools",
  "p3-challenger",
@@ -1034,7 +1034,7 @@ dependencies = [
 [[package]]
 name = "p3-uni-stark"
 version = "0.6.2"
-source = "git+https://github.com/Galmanus/mirror-pool?rev=bc109cb#bc109cba0f7994a3ee73e18e78782cfc2c8d94c7"
+source = "git+https://github.com/Galmanus/mirror-pool?rev=d47c246#d47c24648a6c2371323793f90066109b756cd638"
 dependencies = [
  "itertools",
  "libm",
@@ -1276,7 +1276,7 @@ dependencies = [
 [[package]]
 name = "riverrun-m31"
 version = "0.1.0"
-source = "git+https://github.com/Galmanus/mirror-pool?rev=bc109cb#bc109cba0f7994a3ee73e18e78782cfc2c8d94c7"
+source = "git+https://github.com/Galmanus/mirror-pool?rev=d47c246#d47c24648a6c2371323793f90066109b756cd638"
 dependencies = [
  "p3-air",
  "p3-challenger",
