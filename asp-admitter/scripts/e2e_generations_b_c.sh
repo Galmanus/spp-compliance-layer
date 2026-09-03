@@ -1,5 +1,5 @@
 #!/bin/bash
-S=/tmp/claude-1000/-home-galmanus/79a61f4b-5f36-4e29-b31e-61ca6bf5505f/scratchpad
+S="${S:-$(mktemp -d)}"
 SM=$HOME/projects/vineland/vineland/apps/site/public/samples
 NET="--network testnet --source admin"; ADMIN=$(stellar keys address admin)
 ASP=CBCNAXUHC45Q57AQNSXZCKADYOMOYXMBYTTVFTJ4GLDSNMVNDD3V53I2
